@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>みんなのRAKUMO - 落書きアート RAKUMO</title>
+  <meta name="description" content="全国の子どもたちの「今しか描けない」が集まるギャラリーです。今しか描けない感動の輪、少しずつ広がっています。">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="みんなのRAKUMO - 落書きアート RAKUMO">
+  <meta property="og:description" content="全国の子どもたちの「今しか描けない」が集まるギャラリーです。">
+  <!-- TODO: 本番ドメイン確定後、og:imageは絶対URLに変更すること(相対パスはSNSクローラーに認識されない) -->
+  <meta property="og:image" content="assets/gallery_bg.png">
+  <meta property="og:site_name" content="みんなのRAKUMO">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .hero-two-col {
+      background: #ffffff;
+      padding: 48px 20px 60px;
+      border-bottom: 1px solid #e8e0d0;
+    }
+    .hero-two-col-inner {
+      max-width: 1240px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+    .hero-left h1 {
+      font-size: 60px;
+      color: #1a1a1a;
+      margin-bottom: 15px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+    .hero-left .hero-tagline {
+      font-size: 22px;
+      color: #888;
+      margin-bottom: 21px;
+    }
+    .hero-left .hero-desc {
+      font-size: 23px;
+      color: #666;
+      line-height: 1.7;
+      margin-bottom: 36px;
+      max-width: 720px;
+    }
+    .hero-cta-btn {
+      text-decoration: none;
+      margin-bottom: 42px;
+      font-size: 21px !important;
+      padding: 15px 34px !important;
+    }
+    .hero-stats-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+      max-width: 570px;
+    }
+    .hero-stat-tile {
+      background: #fff;
+      border: 1px solid #e8e0d0;
+      border-radius: 18px;
+      padding: 24px;
+      text-align: center;
+    }
+    .hero-stat-tile.stat-tile-green {
+      background: #eaf6ec;
+      border-color: #cde9d2;
+    }
+    .hero-stat-tile.stat-tile-blue {
+      background: #e9f2fb;
+      border-color: #cde0f4;
+    }
+    .hero-stat-tile .v {
+      font-size: 46px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #f08970;
+      line-height: 1.1;
+    }
+    .hero-stat-tile .l {
+      font-size: 18px;
+      color: #888;
+      margin-top: 3px;
+    }
+
+    /* ---- 47都道府県MAP(右カラム・サブ的な扱いなので小さめ) ---- */
+    .map-card {
+      background: #2b2621;
+      border-radius: 16px;
+      padding: 22px 22px 24px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+    }
+    .map-card-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .map-card-header h2 {
+      color: #fff;
+      font-size: 19px;
+    }
+    .map-sub {
+      color: #bdb3a6;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .map-stats {
+      display: flex;
+      gap: 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 999px;
+      padding: 8px 16px;
+      color: #f0ece4;
+      font-size: 12px;
+      margin-bottom: 16px;
+      width: fit-content;
+    }
+    .map-stats strong {
+      color: #f08970;
+      font-size: 13.5px;
+    }
+    .map-svg-wrap {
+      position: relative;
+      max-width: 100%;
+      margin: 0 auto;
+    }
+    #japanMap {
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+    .region-label {
+      fill: #8d8377;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+    }
+    .pref-cell {
+      fill: #4a443d;
+      stroke: #2b2621;
+      stroke-width: 2;
+      cursor: pointer;
+      transition: fill 0.15s ease, stroke 0.15s ease;
+    }
+    .pref-cell:hover {
+      stroke: #fff;
+    }
+    .pref-cell.lv1 { fill: #e0b84a; }
+    .pref-cell.lv2 { fill: #4a90c4; }
+    .pref-cell.lv3 { fill: #5cb37a; }
+    .pref-label {
+      fill: #d8d0c4;
+      font-size: 9px;
+      text-anchor: middle;
+      pointer-events: none;
+    }
+    .pref-label.dark-text { fill: #3a2f14; }
+    .map-tooltip {
+      position: absolute;
+      transform: translate(-50%, -120%);
+      background: #fff;
+      color: #1a1a1a;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      white-space: nowrap;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+      pointer-events: none;
+      z-index: 10;
+    }
+    .map-tooltip[hidden] { display: none; }
+    .map-tooltip strong {
+      display: block;
+      font-size: 13.5px;
+      margin-bottom: 1px;
+    }
+    .map-legend {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 16px;
+      color: #d8d0c4;
+      font-size: 11px;
+    }
+    .map-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .map-dot-icon {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+      background: #55504a;
+    }
+    .map-dot-icon.lv1 { background: #e0b84a; }
+    .map-dot-icon.lv2 { background: #4a90c4; }
+    .map-dot-icon.lv3 { background: #5cb37a; }
+    .map-card-btn {
+      display: block;
+      text-align: center;
+      margin-top: 18px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .gallery-bg-wrap {
+      position: relative;
+      overflow: hidden;
+    }
+    .gallery-bg-wrap::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: url('assets/gallery_bg.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0.3;
+      -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 0%, transparent 75%);
+      mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 0%, transparent 75%);
+      pointer-events: none;
+    }
+    .gallery-container {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 60px auto;
+      padding: 0 20px;
+    }
+
+    @media (max-width: 900px) {
+      .hero-two-col-inner {
+        grid-template-columns: 1fr;
+      }
+      .hero-left .hero-desc { max-width: none; }
+    }
+
+    .cta-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      text-decoration: none;
+      background: linear-gradient(135deg, #fff3ef 0%, #fff8f2 100%);
+      border: 1.5px dashed #f0a58f;
+      padding: 24px 20px;
+      gap: 10px;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .cta-tile:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 14px 28px rgba(240,137,112,0.22);
+      border-color: var(--coral);
+    }
+    .cta-tile-icon {
+      font-size: 51px;
+    }
+    .cta-tile-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a1a1a;
+      line-height: 1.5;
+    }
+    .cta-tile-btn {
+      margin-top: 6px;
+      display: inline-block;
+      background: var(--coral);
+      color: #fff;
+      font-size: 19.5px;
+      font-weight: 700;
+      padding: 13px 28px;
+      border-radius: 999px;
+    }
+
+    .sns-tile {
+      background: linear-gradient(135deg, #eef5ff 0%, #f5faff 100%);
+      border-color: #a9c9f0;
+      cursor: default;
+    }
+    .sns-tile:hover {
+      border-color: #4a90c4;
+      box-shadow: 0 14px 28px rgba(74,144,196,0.18);
+    }
+    .sns-tile-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .sns-icon-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #fff;
+      border: 1.5px solid #d6e4f5;
+      color: #333;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 999px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .sns-icon-btn:hover {
+      background: #4a90c4;
+      color: #fff;
+      border-color: #4a90c4;
+    }
+    .sns-tile-note {
+      font-size: 11px;
+      color: #93a3b5;
+      margin-top: 6px;
+    }
+
+    .gallery-section-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin: 0 0 24px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .gallery-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 20px;
+    }
+    .sort-tabs {
+      display: flex;
+      gap: 4px;
+      background: #f0ece4;
+      border-radius: 24px;
+      padding: 4px;
+    }
+    .sort-btn {
+      padding: 8px 18px;
+      border: none;
+      background: transparent;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      color: #666;
+      transition: all 0.2s ease;
+    }
+    .sort-btn.active {
+      background: #fff;
+      color: #f08970;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    .gallery-filters {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 40px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .gallery-filters button {
+      padding: 10px 20px;
+      border: 1px solid #d0c8b8;
+      background: #fff;
+      border-radius: 24px;
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.3s ease;
+      color: #666;
+    }
+    .gallery-filters button:hover {
+      background: #f9f5ed;
+    }
+    .age-filters {
+      margin-bottom: 24px;
+      align-items: center;
+    }
+    .age-filter-label {
+      font-size: 13px;
+      color: #999;
+      white-space: nowrap;
+      margin-right: 4px;
+    }
+    .age-btn {
+      padding: 6px 14px !important;
+      font-size: 12.5px !important;
+    }
+    .gallery-filters button.active {
+      background: #f08970;
+      border-color: #f08970;
+      color: #fff;
+    }
+
+    .gallery-grid-page {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      margin-bottom: 60px;
+    }
+    @media (max-width: 900px) {
+      .gallery-grid-page {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    .gallery-item {
+      cursor: pointer;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(26,20,14,0.06);
+      border: 1px solid rgba(26,20,14,0.06);
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .gallery-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 14px 28px rgba(26,20,14,0.16);
+      border-color: rgba(240,137,112,0.35);
+    }
+    .gallery-item .thumb-mat {
+      padding: 10px 10px 0;
+      background: #fff;
+    }
+    .gallery-item .thumb-frame {
+      position: relative;
+      width: 100%;
+      padding-top: 100%;
+      overflow: hidden;
+      border-radius: 6px;
+      background: #f0ece4;
+    }
+    .gallery-item img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .gallery-item-info {
+      padding: 14px;
+      background: #fff;
+    }
+    .gallery-item-style {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #f08970;
+      background: #fff3ef;
+      border-radius: 6px;
+      padding: 2px 8px;
+      margin-bottom: 8px;
+    }
+    .gallery-item-theme {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #4a90c4;
+      background: #eef5ff;
+      border-radius: 6px;
+      padding: 2px 8px;
+      margin-bottom: 8px;
+      margin-left: 4px;
+    }
+    .gallery-item-caption {
+      font-size: 15px;
+      color: #1a1a1a;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-bottom: 4px;
+    }
+    .gallery-item-meta {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 10px;
+      min-height: 15px;
+    }
+
+    .clap-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border: 1px solid #e0d8c8;
+      background: #faf8f3;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      color: #666;
+      transition: all 0.2s ease;
+    }
+    .clap-btn:hover:not(:disabled) {
+      background: #fff3ef;
+      border-color: #f08970;
+    }
+    .clap-btn.clapped {
+      background: #fff0eb;
+      border-color: #f08970;
+      color: #f08970;
+      font-weight: 600;
+    }
+    .clap-btn:disabled {
+      cursor: default;
+    }
+    .clap-btn-large {
+      width: 100%;
+      justify-content: center;
+      padding: 12px;
+      font-size: 15px;
+      margin-top: 16px;
+    }
+    .share-row {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid #eee;
+    }
+    .share-label {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 8px;
+    }
+    .share-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .share-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+    .share-btn:hover { opacity: 0.85; }
+    .share-btn-x { background: #000; color: #fff; }
+    .share-btn-line { background: #06c755; color: #fff; }
+    .share-btn-copy { background: #f0ece4; color: #444; }
+    .share-btn-copy.copied { background: #d9f0da; color: #2e6b3e; }
+    .gallery-modal-description {
+      font-size: 13.5px;
+      color: #555;
+      line-height: 1.6;
+      margin-top: 12px;
+      white-space: pre-wrap;
+    }
+
+    .gallery-pagination {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 40px;
+    }
+    .pagination-btn {
+      padding: 8px 12px;
+      border: 1px solid #d0c8b8;
+      background: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    .pagination-btn:hover:not(:disabled) {
+      background: #f9f5ed;
+    }
+    .pagination-btn.active {
+      background: #f08970;
+      border-color: #f08970;
+      color: #fff;
+    }
+    .pagination-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .gallery-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .gallery-modal.active {
+      display: flex;
+    }
+    .gallery-modal-content {
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    .gallery-modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: rgba(0,0,0,0.2);
+      color: #fff;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .gallery-modal-image-frame {
+      position: relative;
+      width: 100%;
+      padding-top: 100%;
+      overflow: hidden;
+      background: #f0ece4;
+    }
+    .gallery-modal-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .gallery-modal-info {
+      padding: 24px;
+    }
+    .gallery-modal-style {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .gallery-modal-caption {
+      font-size: 18px;
+      color: #333;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .gallery-modal-meta {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.6;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+
+    @media (max-width: 640px) {
+      .hero-two-col {
+        padding: 32px 20px 40px;
+      }
+      .hero-left h1 {
+        font-size: 30px;
+      }
+      .gallery-grid-page {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+      .gallery-filters {
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo">
+        <span class="logo-text rakumo-brand">RAKUMO</span> <img src="assets/rakumo_cloud_mark.png" class="rakumo-mark" alt="">
+        <span class="logo-sub">DOODLE ART</span>
+      </a>
+      <nav class="site-nav">
+        <a href="index.html#how">使い方</a>
+        <a href="index.html#styles">アートスタイル</a>
+        <a href="gallery.html" class="active">みんなのRAKUMO</a>
+        <a href="index.html#plan">料金プラン</a>
+        <a href="mypage.html">マイページ</a>
+      </nav>
+      <div class="header-actions">
+        <button id="loginBtn" class="btn-login">ログイン</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero-two-col">
+    <div class="hero-two-col-inner">
+      <div class="hero-left">
+        <h1>みんなの<span class="rakumo-brand">RAKUMO</span> <img src="assets/rakumo_cloud_mark.png" class="rakumo-mark" alt=""> PROJECT</h1>
+        <p class="hero-tagline">全国の子どもたちの「今しか描けない」を集めよう。</p>
+        <p class="hero-desc">「今しか描けない感動の輪」少しずつ広がっています。<br>みんなのギャラリーを、ぜひご覧ください。</p>
+        <a href="index.html?post=1" class="btn-pill btn-pill-primary hero-cta-btn">作品を投稿する</a>
+        <div class="hero-stats-row">
+          <div class="hero-stat-tile stat-tile-green">
+            <div class="v" id="heroStatTotal">-</div>
+            <div class="l">みんなの作品数</div>
+          </div>
+          <div class="hero-stat-tile stat-tile-blue">
+            <div class="v" id="heroStatPref">-</div>
+            <div class="l">都道府県コンプリート</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-right">
+        <div class="map-card">
+          <div class="map-card-header">
+            <h2>みんなの<span class="rakumo-brand">RAKUMO</span> <img src="assets/rakumo_cloud_mark.png" class="rakumo-mark" alt=""> MAP</h2>
+          </div>
+          <p class="map-sub">全国参加の広がりを見てみましょう</p>
+
+      <div class="map-stats" id="mapStats">読み込み中…</div>
+
+      <div class="map-svg-wrap">
+        <svg id="japanMap" viewBox="0 0 448 532" xmlns="http://www.w3.org/2000/svg" aria-label="日本地図 都道府県別投稿数(地理的配置グリッドマップ)">
+          <rect class="pref-cell" data-pref="北海道" x="394" y="20" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="北海道" x="411" y="40">北海道</text>
+          <rect class="pref-cell" data-pref="青森県" x="360" y="88" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="青森県" x="377" y="108">青森</text>
+          <rect class="pref-cell" data-pref="岩手県" x="360" y="122" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="岩手県" x="377" y="142">岩手</text>
+          <rect class="pref-cell" data-pref="秋田県" x="326" y="122" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="秋田県" x="343" y="142">秋田</text>
+          <rect class="pref-cell" data-pref="宮城県" x="360" y="156" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="宮城県" x="377" y="176">宮城</text>
+          <rect class="pref-cell" data-pref="山形県" x="326" y="156" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="山形県" x="343" y="176">山形</text>
+          <rect class="pref-cell" data-pref="福島県" x="360" y="190" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="福島県" x="377" y="210">福島</text>
+          <rect class="pref-cell" data-pref="茨城県" x="360" y="258" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="茨城県" x="377" y="278">茨城</text>
+          <rect class="pref-cell" data-pref="栃木県" x="326" y="224" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="栃木県" x="343" y="244">栃木</text>
+          <rect class="pref-cell" data-pref="群馬県" x="292" y="224" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="群馬県" x="309" y="244">群馬</text>
+          <rect class="pref-cell" data-pref="埼玉県" x="326" y="258" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="埼玉県" x="343" y="278">埼玉</text>
+          <rect class="pref-cell" data-pref="東京都" x="326" y="292" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="東京都" x="343" y="312">東京</text>
+          <rect class="pref-cell" data-pref="千葉県" x="360" y="292" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="千葉県" x="377" y="312">千葉</text>
+          <rect class="pref-cell" data-pref="神奈川県" x="292" y="258" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="神奈川県" x="309" y="278">神奈川</text>
+          <rect class="pref-cell" data-pref="新潟県" x="258" y="190" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="新潟県" x="275" y="210">新潟</text>
+          <rect class="pref-cell" data-pref="富山県" x="258" y="224" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="富山県" x="275" y="244">富山</text>
+          <rect class="pref-cell" data-pref="石川県" x="224" y="224" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="石川県" x="241" y="244">石川</text>
+          <rect class="pref-cell" data-pref="福井県" x="224" y="258" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="福井県" x="241" y="278">福井</text>
+          <rect class="pref-cell" data-pref="山梨県" x="258" y="258" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="山梨県" x="275" y="278">山梨</text>
+          <rect class="pref-cell" data-pref="長野県" x="292" y="190" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="長野県" x="309" y="210">長野</text>
+          <rect class="pref-cell" data-pref="岐阜県" x="224" y="292" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="岐阜県" x="241" y="312">岐阜</text>
+          <rect class="pref-cell" data-pref="静岡県" x="292" y="292" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="静岡県" x="309" y="312">静岡</text>
+          <rect class="pref-cell" data-pref="愛知県" x="258" y="292" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="愛知県" x="275" y="312">愛知</text>
+          <rect class="pref-cell" data-pref="三重県" x="224" y="326" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="三重県" x="241" y="346">三重</text>
+          <rect class="pref-cell" data-pref="滋賀県" x="190" y="258" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="滋賀県" x="207" y="278">滋賀</text>
+          <rect class="pref-cell" data-pref="京都府" x="190" y="224" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="京都府" x="207" y="244">京都</text>
+          <rect class="pref-cell" data-pref="大阪府" x="190" y="292" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="大阪府" x="207" y="312">大阪</text>
+          <rect class="pref-cell" data-pref="兵庫県" x="156" y="258" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="兵庫県" x="173" y="278">兵庫</text>
+          <rect class="pref-cell" data-pref="奈良県" x="190" y="326" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="奈良県" x="207" y="346">奈良</text>
+          <rect class="pref-cell" data-pref="和歌山県" x="156" y="292" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="和歌山県" x="173" y="312">和歌山</text>
+          <rect class="pref-cell" data-pref="鳥取県" x="122" y="224" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="鳥取県" x="139" y="244">鳥取</text>
+          <rect class="pref-cell" data-pref="島根県" x="122" y="258" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="島根県" x="139" y="278">島根</text>
+          <rect class="pref-cell" data-pref="岡山県" x="122" y="292" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="岡山県" x="139" y="312">岡山</text>
+          <rect class="pref-cell" data-pref="広島県" x="88" y="258" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="広島県" x="105" y="278">広島</text>
+          <rect class="pref-cell" data-pref="山口県" x="88" y="292" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="山口県" x="105" y="312">山口</text>
+          <rect class="pref-cell" data-pref="徳島県" x="156" y="326" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="徳島県" x="173" y="346">徳島</text>
+          <rect class="pref-cell" data-pref="香川県" x="122" y="326" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="香川県" x="139" y="346">香川</text>
+          <rect class="pref-cell" data-pref="愛媛県" x="88" y="326" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="愛媛県" x="105" y="346">愛媛</text>
+          <rect class="pref-cell" data-pref="高知県" x="156" y="360" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="高知県" x="173" y="380">高知</text>
+          <rect class="pref-cell" data-pref="福岡県" x="54" y="292" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="福岡県" x="71" y="312">福岡</text>
+          <rect class="pref-cell" data-pref="佐賀県" x="54" y="326" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="佐賀県" x="71" y="346">佐賀</text>
+          <rect class="pref-cell" data-pref="長崎県" x="20" y="326" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="長崎県" x="37" y="346">長崎</text>
+          <rect class="pref-cell" data-pref="熊本県" x="54" y="360" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="熊本県" x="71" y="380">熊本</text>
+          <rect class="pref-cell" data-pref="大分県" x="88" y="360" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="大分県" x="105" y="380">大分</text>
+          <rect class="pref-cell" data-pref="宮崎県" x="54" y="394" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="宮崎県" x="71" y="414">宮崎</text>
+          <rect class="pref-cell" data-pref="鹿児島県" x="20" y="360" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="鹿児島県" x="37" y="380">鹿児島</text>
+          <rect class="pref-cell" data-pref="沖縄県" x="404" y="478" width="34" height="34"></rect>
+          <text class="pref-label" data-pref-label="沖縄県" x="421" y="498">沖縄</text>
+          <text x="10" y="472" class="region-label" text-anchor="start">沖縄県(離島のため位置を調整)</text>
+        </svg>
+        <div id="mapTooltip" class="map-tooltip" hidden></div>
+      </div>
+
+          <div class="map-legend">
+            <span><i class="map-dot-icon lv0"></i>まだ投稿なし(募集中)</span>
+            <span><i class="map-dot-icon lv1"></i>1〜9作品</span>
+            <span><i class="map-dot-icon lv2"></i>10〜99作品</span>
+            <span><i class="map-dot-icon lv3"></i>100作品以上</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="gallery-bg-wrap">
+  <div class="gallery-container">
+    <h2 class="gallery-section-title">みんなの<span class="rakumo-brand">RAKUMO</span> <img src="assets/rakumo_cloud_mark.png" class="rakumo-mark" alt=""> ギャラリー</h2>
+
+    <div class="gallery-toolbar">
+      <div class="sort-tabs">
+        <button class="sort-btn active" data-sort="new">新着</button>
+        <button class="sort-btn" data-sort="popular">人気</button>
+      </div>
+    </div>
+
+    <div class="gallery-filters">
+      <button class="filter-btn active" data-style="">全て</button>
+      <button class="filter-btn" data-style="andy">Andy風</button>
+      <button class="filter-btn" data-style="dynamic">ダイナミックアート</button>
+      <button class="filter-btn" data-style="matisse">Matisse風</button>
+      <button class="filter-btn" data-style="rothko">Rothko風</button>
+      <button class="filter-btn" data-style="mirror">ミラーリング</button>
+      <button class="filter-btn" data-style="cubism">キュビズム風</button>
+      <button class="filter-btn" data-style="lichtenstein">Lichtenstein風</button>
+      <button class="filter-btn" data-style="triptych">トリプティク</button>
+    </div>
+
+    <div class="gallery-filters age-filters">
+      <span class="age-filter-label">年齢で絞り込み:</span>
+      <button class="filter-btn age-btn active" data-age="">全年齢</button>
+      <button class="filter-btn age-btn" data-age="3">3歳</button>
+      <button class="filter-btn age-btn" data-age="4">4歳</button>
+      <button class="filter-btn age-btn" data-age="5">5歳</button>
+      <button class="filter-btn age-btn" data-age="6">6歳</button>
+      <button class="filter-btn age-btn" data-age="7">7歳</button>
+      <button class="filter-btn age-btn" data-age="8">8歳</button>
+      <button class="filter-btn age-btn" data-age="9">9歳以上</button>
+    </div>
+
+    <div class="gallery-filters age-filters">
+      <span class="age-filter-label">テーマで絞り込み:</span>
+      <button class="filter-btn theme-btn active" data-theme="">すべて</button>
+      <button class="filter-btn theme-btn" data-theme="夏">#夏</button>
+      <button class="filter-btn theme-btn" data-theme="家族">#家族</button>
+      <button class="filter-btn theme-btn" data-theme="恐竜">#恐竜</button>
+      <button class="filter-btn theme-btn" data-theme="夢">#夢</button>
+      <button class="filter-btn theme-btn" data-theme="動物">#動物</button>
+      <button class="filter-btn theme-btn" data-theme="乗り物">#乗り物</button>
+      <button class="filter-btn theme-btn" data-theme="宇宙">#宇宙</button>
+      <button class="filter-btn theme-btn" data-theme="その他">#その他</button>
+    </div>
+
+    <div id="galleryContainer" class="gallery-grid-page">
+      <div class="loading">読み込み中...</div>
+    </div>
+
+    <div class="gallery-pagination">
+      <button id="prevBtn" class="pagination-btn">← 前へ</button>
+      <div id="pageNumbers"></div>
+      <button id="nextBtn" class="pagination-btn">次へ →</button>
+    </div>
+  </div>
+  </div>
+
+  <div id="galleryModal" class="gallery-modal">
+    <div class="gallery-modal-content">
+      <button id="modalClose" class="gallery-modal-close">×</button>
+      <div class="gallery-modal-image-frame">
+        <img id="modalImage" class="gallery-modal-image" src="" alt="">
+      </div>
+      <div class="gallery-modal-info">
+        <div class="gallery-modal-style" id="modalStyle"></div>
+        <div class="gallery-modal-caption" id="modalCaption"></div>
+        <div class="gallery-modal-meta" id="modalMeta"></div>
+        <div id="modalDescription" class="gallery-modal-description"></div>
+        <button id="modalClapBtn" class="clap-btn clap-btn-large">
+          👏 拍手する <span id="modalClapCount" class="clap-count">0</span>
+        </button>
+        <div class="share-row">
+          <div class="share-label">この作品をシェア</div>
+          <div class="share-buttons">
+            <a id="shareX" class="share-btn share-btn-x" href="#" target="_blank" rel="noopener">𝕏</a>
+            <a id="shareLine" class="share-btn share-btn-line" href="#" target="_blank" rel="noopener">LINE</a>
+            <button id="shareCopy" class="share-btn share-btn-copy" type="button">🔗 URLをコピー</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="gallery-page.js?v=6"></script>
+</body>
+</html>

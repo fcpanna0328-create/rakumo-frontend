@@ -1,0 +1,705 @@
+/* ============================================================
+   落書きアート RAKUMO — フロントエンド ロジック
+   バックエンド(FastAPI)と通信して、実際のアップロード〜生成〜回転
+   〜ダウンロードまでを行う。
+   ============================================================ */
+
+// バックエンドのURL。開発中はlocalhost、本番ではデプロイ先のURLに変更する。
+const API_BASE = window.RAKUMO_API_BASE || "http://localhost:8000";
+
+const STYLE_IDS = ["andy","dynamic","matisse","rothko","mirror","cubism","lichtenstein","triptych"];
+let STYLE_META = {}; // id -> {name, description} ※ /api/styles から取得
+
+/* ---- ログイン状態 ---- */
+let authToken = localStorage.getItem("rakumo_token") || null;
+let authUserEmail = localStorage.getItem("rakumo_user_email") || null;
+let authMode = "login"; // "login" または "signup"
+
+function authHeaders(){
+  return authToken ? {"Authorization": `Bearer ${authToken}`} : {};
+}
+
+function setSession(token, email){
+  authToken = token;
+  authUserEmail = email;
+  if(token){
+    localStorage.setItem("rakumo_token", token);
+    localStorage.setItem("rakumo_user_email", email || "");
+  }else{
+    localStorage.removeItem("rakumo_token");
+    localStorage.removeItem("rakumo_user_email");
+  }
+  updateAuthUI();
+}
+
+function updateAuthUI(){
+  if(authToken){
+    $("loginBtn").hidden = true;
+    $("userInfo").hidden = false;
+    $("userEmail").textContent = authUserEmail || "";
+  }else{
+    $("loginBtn").hidden = false;
+    $("userInfo").hidden = true;
+  }
+}
+
+function openAuthModal(mode){
+  authMode = mode;
+  $("authEmail").value = "";
+  $("authPassword").value = "";
+  $("authStatus").textContent = "";
+  updateAuthModeUI();
+  $("authModal").hidden = false;
+}
+function closeAuthModal(){ $("authModal").hidden = true; }
+
+function updateAuthModeUI(){
+  const isLogin = authMode === "login";
+  $("authTabLogin").classList.toggle("active", isLogin);
+  $("authTabSignup").classList.toggle("active", !isLogin);
+  $("authSubmitBtn").textContent = isLogin ? "ログイン" : "新規登録";
+}
+
+$("loginBtn").addEventListener("click", ()=> openAuthModal("login"));
+$("closeAuthModal").addEventListener("click", closeAuthModal);
+$("authModal").addEventListener("click", e=>{ if(e.target.id==="authModal") closeAuthModal(); });
+$("authTabLogin").addEventListener("click", ()=>{ authMode="login"; updateAuthModeUI(); });
+$("authTabSignup").addEventListener("click", ()=>{ authMode="signup"; updateAuthModeUI(); });
+$("logoutBtn").addEventListener("click", ()=>{ setSession(null, null); });
+
+$("authForm").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const email = $("authEmail").value.trim();
+  const password = $("authPassword").value;
+  const endpoint = authMode === "login" ? "login" : "signup";
+  $("authStatus").textContent = authMode === "login" ? "ログイン中…" : "登録中…";
+  $("authSubmitBtn").disabled = true;
+
+  let res, data;
+  try{
+    res = await fetch(`${API_BASE}/api/auth/${endpoint}`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({email, password})
+    });
+    data = await res.json();
+  }catch(err){
+    $("authStatus").textContent = "サーバーに接続できませんでした。";
+    $("authSubmitBtn").disabled = false;
+    return;
+  }
+  $("authSubmitBtn").disabled = false;
+
+  if(!res.ok){
+    $("authStatus").textContent = data.detail || "エラーが発生しました。";
+    return;
+  }
+
+  if(data.email_confirmation_required){
+    $("authStatus").textContent = "確認メールを送りました。メール内のリンクをクリックしてから、ログインしてください。";
+    return;
+  }
+
+  setSession(data.access_token, data.user && data.user.email);
+  closeAuthModal();
+});
+
+updateAuthUI();
+
+let motifId = null;
+let baseGenerations = {};    // style -> {generation_id, image_url}
+let displayGenerations = {}; // style -> {image_url}  (回転反映後の表示用)
+let selectedStyle = null;
+let rotationDeg = 0;
+
+function $(id){ return document.getElementById(id); }
+
+/* ---- モーダルの開閉 ---- */
+function openModal(){
+  $("appModal").hidden = false;
+  resetToUploadPane();
+}
+function closeModal(){
+  $("appModal").hidden = true;
+}
+$("openUploadBtn").addEventListener("click", ()=>{ openModal(); $("dropzone").click(); });
+$("openSampleBtn").addEventListener("click", ()=>{ openModal(); runSample(); });
+$("ctaUploadBtn").addEventListener("click", ()=>{ openModal(); });
+$("closeModal").addEventListener("click", closeModal);
+$("appModal").addEventListener("click", (e)=>{ if(e.target.id==="appModal") closeModal(); });
+
+function resetToUploadPane(){
+  $("uploadPane").hidden = false;
+  $("resultPane").hidden = true;
+  $("uploadStatus").textContent = "";
+}
+
+/* ---- アップロードUI ---- */
+$("dropzone").addEventListener("click", ()=> $("fileInput").click());
+$("dropzone").addEventListener("dragover", e=>{ e.preventDefault(); $("dropzone").style.borderColor="#F0847A"; });
+$("dropzone").addEventListener("dragleave", ()=>{ $("dropzone").style.borderColor=""; });
+$("dropzone").addEventListener("drop", e=>{
+  e.preventDefault();
+  $("dropzone").style.borderColor="";
+  const file = e.dataTransfer.files[0];
+  if(file) handleUpload(file);
+});
+$("fileInput").addEventListener("change", e=>{
+  const file = e.target.files[0];
+  if(file) handleUpload(file);
+  e.target.value = "";
+});
+$("sampleBtnInner").addEventListener("click", runSample);
+
+/* ---- サンプル落書き生成(クライアント側でcanvas描画→blob化してアップロード) ---- */
+function rand(a,b){ return Math.random()*(b-a)+a; }
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function generateSampleDoodleCanvas(){
+  const c = document.createElement("canvas");
+  c.width=700; c.height=900;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle="#fdfaf3"; ctx.fillRect(0,0,c.width,c.height);
+  const palette=["#7a2f8f","#c0272d","#28448f","#c8940f","#2e6b3e","#c9782e"];
+
+  function crayonLine(pts,color,width){
+    ctx.strokeStyle=color; ctx.lineWidth=width; ctx.lineCap="round"; ctx.lineJoin="round";
+    ctx.globalAlpha=0.85+Math.random()*0.15;
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0],pts[0][1]);
+    for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]);
+    ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+  function drawSwirl(cx,cy,turns,growth,squish,color,width){
+    let pts=[]; const rot=rand(0,Math.PI*2);
+    for(let a=0;a<Math.PI*turns;a+=0.15){
+      const r=14+a*growth, ang=a+rot;
+      pts.push([cx+r*Math.cos(ang)+rand(-6,6), cy+r*Math.sin(ang)*squish+rand(-6,6)]);
+    }
+    crayonLine(pts,color,width);
+  }
+  function drawLoop(cx,cy,rr,color,width){
+    let loop=[];
+    for(let a=0;a<=Math.PI*2+0.3;a+=0.3) loop.push([cx+rr*Math.cos(a)+rand(-3,3), cy+rr*0.75*Math.sin(a)+rand(-3,3)]);
+    crayonLine(loop,color,width);
+  }
+
+  const cx=rand(250,450), cy=rand(300,480);
+  drawSwirl(cx,cy, rand(5,9), rand(8,14), rand(0.6,0.95), pick(palette), rand(7,11));
+  const nLoops=Math.floor(rand(4,9));
+  for(let i=0;i<nLoops;i++) drawLoop(rand(150,550), rand(600,850), rand(16,40), pick(palette), rand(5,8));
+
+  return c;
+}
+
+async function runSample(){
+  const res = await fetch("assets/sample_doodle.jpg");
+  const blob = await res.blob();
+  const file = new File([blob], "sample.jpg", {type:"image/jpeg"});
+  handleUpload(file);
+}
+
+/* ---- アップロード〜生成の本体 ---- */
+async function handleUpload(file){
+  $("uploadStatus").textContent = `「${file.name}」をアップロード中…`;
+  const form = new FormData();
+  form.append("file", file);
+
+  let res;
+  try{
+    res = await fetch(`${API_BASE}/api/upload`, {method:"POST", headers: authHeaders(), body:form});
+  }catch(err){
+    $("uploadStatus").textContent = "サーバーに接続できませんでした。バックエンドが起動しているか確認してください。";
+    return;
+  }
+  if(!res.ok){
+    const err = await res.json().catch(()=>({detail:"不明なエラー"}));
+    $("uploadStatus").textContent = err.detail || `エラー(${res.status})`;
+    return;
+  }
+  const data = await res.json();
+  motifId = data.motif_id;
+
+  // 元画像プレビュー
+  $("uploadPane").hidden = true;
+  $("resultPane").hidden = false;
+  const origImg = new Image();
+  origImg.crossOrigin = "anonymous";
+  origImg.onload = ()=>{
+    const cv = $("origCanvas");
+    const dispW = 260, dispH = Math.round(dispW*origImg.height/origImg.width);
+    cv.width=dispW; cv.height=dispH;
+    const cctx = cv.getContext("2d");
+    cctx.fillStyle="#fff"; cctx.fillRect(0,0,dispW,dispH);
+    cctx.drawImage(origImg,0,0,dispW,dispH);
+  };
+  origImg.src = `${API_BASE}/api/motif/${motifId}`;
+
+  // グリッドを初期化してプレースホルダーを表示
+  baseGenerations = {}; displayGenerations = {}; selectedStyle=null; rotationDeg=0;
+  updateRotateUI();
+  const grid = $("resultGrid");
+  grid.innerHTML = "";
+  STYLE_IDS.forEach(id=>{
+    const card = document.createElement("div");
+    card.className = "result-card";
+    card.id = `card-${id}`;
+    card.innerHTML = `<div class="thumb"><span style="color:#cbbf9e;font-size:20px;">${(STYLE_META[id]?.name||id)[0]}</span></div><div class="name">${STYLE_META[id]?.name||id}</div>`;
+    card.addEventListener("click", ()=> selectStyle(id));
+    grid.appendChild(card);
+  });
+  $("featuredArea").hidden = true;
+
+  // 8スタイルを順番に生成
+  for(const styleId of STYLE_IDS){
+    $("uploadStatus").textContent = ""; // アップロードペインは非表示なので実質未使用
+    try{
+      const r = await fetch(`${API_BASE}/api/generate`, {
+        method:"POST", headers:{"Content-Type":"application/json", ...authHeaders()},
+        body: JSON.stringify({motif_id: motifId, style: styleId})
+      });
+      if(!r.ok){ console.error(styleId, await r.text()); continue; }
+      const g = await r.json();
+      baseGenerations[styleId] = g;
+      displayGenerations[styleId] = {image_url: g.image_url};
+      renderThumb(styleId, g.image_url);
+    }catch(err){
+      console.error(styleId, err);
+    }
+  }
+}
+
+function renderThumb(styleId, imageUrl){
+  const card = $(`card-${styleId}`);
+  if(!card) return;
+  card.querySelector(".thumb").innerHTML = `<img src="${API_BASE}${imageUrl}" crossorigin="anonymous">`;
+}
+
+function selectStyle(id){
+  if(!baseGenerations[id]) return; // まだ生成が終わっていない
+  selectedStyle = id;
+  document.querySelectorAll(".result-card").forEach(c=>c.classList.remove("selected"));
+  $(`card-${id}`).classList.add("selected");
+  showFeatured();
+}
+
+/* ---- 回転(表示用。再生成はしない) ---- */
+$("rotateLeft").addEventListener("click", ()=> rotateBy(-45));
+$("rotateRight").addEventListener("click", ()=> rotateBy(45));
+
+async function rotateBy(delta){
+  rotationDeg = ((rotationDeg + delta) % 360 + 360) % 360;
+  updateRotateUI();
+  $("rotateLeft").disabled = true; $("rotateRight").disabled = true;
+
+  const tasks = Object.keys(baseGenerations).map(async styleId=>{
+    const base = baseGenerations[styleId];
+    try{
+      const r = await fetch(`${API_BASE}/api/rotate`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({generation_id: base.generation_id, angle: rotationDeg})
+      });
+      if(!r.ok) return;
+      const d = await r.json();
+      displayGenerations[styleId] = {image_url: d.image_url};
+      renderThumb(styleId, d.image_url);
+    }catch(err){ console.error(err); }
+  });
+  await Promise.all(tasks);
+
+  if(selectedStyle) showFeatured();
+  $("rotateLeft").disabled = false; $("rotateRight").disabled = false;
+}
+
+function updateRotateUI(){
+  $("rotateAngle").textContent = `${rotationDeg}°`;
+}
+
+/* ---- 額装プレビュー(部屋のモックアップをcanvasで描画) ---- */
+function drawFramedRoom(img){
+  const size = 640;
+  const canvas = document.createElement("canvas");
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext("2d");
+
+  const wallH = size*0.78;
+  ctx.fillStyle = "#e1d8c8"; ctx.fillRect(0,0,size,wallH);
+  ctx.fillStyle = "#c79a68"; ctx.fillRect(0,wallH,size,size-wallH);
+  ctx.fillStyle = "#cabfa8"; ctx.fillRect(0,wallH-6,size,6);
+
+  const frameW = size*0.5;
+  const ratio = img.height/img.width;
+  const matW = frameW*0.09;
+  const innerW = frameW - matW*2, innerH = innerW*ratio;
+  const frameH = innerH + matW*2;
+  const border = 8;
+  const fx = size/2 - frameW/2, fy = wallH*0.08;
+
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,.35)"; ctx.shadowBlur=18; ctx.shadowOffsetX=6; ctx.shadowOffsetY=8;
+  ctx.fillStyle="#3a2d23";
+  ctx.fillRect(fx-border, fy-border, frameW+border*2, frameH+border*2);
+  ctx.restore();
+
+  ctx.fillStyle="#fdfbf7";
+  ctx.fillRect(fx,fy,frameW,frameH);
+  ctx.drawImage(img, fx+matW, fy+matW, innerW, innerH);
+
+  return canvas;
+}
+
+function showFeatured(){
+  const disp = displayGenerations[selectedStyle];
+  if(!disp) return;
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = ()=>{
+    const canvas = drawFramedRoom(img);
+    const wrap = $("roomPreview");
+    wrap.innerHTML = "";
+    wrap.appendChild(canvas);
+    $("featuredArea").hidden = false;
+    canvas._sourceImg = img;
+  };
+  img.src = `${API_BASE}${disp.image_url}`;
+}
+
+/* ---- ダウンロード(無料枠 / 都度課金 / サブスクの判定つき) ---- */
+$("downloadArtBtn").addEventListener("click", ()=> attemptDownload("plain"));
+$("downloadFramedBtn").addEventListener("click", ()=> attemptDownload("framed"));
+
+async function attemptDownload(kind){
+  if(!selectedStyle || !baseGenerations[selectedStyle]) return;
+  const generationId = baseGenerations[selectedStyle].generation_id;
+
+  let res, data;
+  try{
+    res = await fetch(`${API_BASE}/api/generation/${generationId}/claim-download`, {
+      method: "POST", headers: authHeaders()
+    });
+    data = await res.json();
+  }catch(err){
+    alert("通信エラーが発生しました。時間をおいて再度お試しください。");
+    return;
+  }
+
+  if(!data.allowed){
+    openPaywallModal(data);
+    return;
+  }
+  runDownload(kind);
+}
+
+function runDownload(kind){
+  if(kind === "framed"){
+    const canvas = $("roomPreview").querySelector("canvas");
+    if(!canvas) return;
+    canvas.toBlob(blob=> triggerDownload(blob, `落書きアート_額装_${selectedStyle}.png`));
+    return;
+  }
+  const url = `${API_BASE}${displayGenerations[selectedStyle].image_url}`;
+  fetch(url).then(r=>r.blob()).then(blob=>{
+    triggerDownload(blob, `落書きアート_${selectedStyle}.png`);
+  });
+}
+
+function triggerDownload(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href=url; a.download=filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ---- ペイウォールモーダル ---- */
+function openPaywallModal(status){
+  if(status && status.price_per_extra_download_yen) $("paywallSinglePrice").textContent = status.price_per_extra_download_yen;
+  if(status && status.subscription_price_yen) $("paywallSubPrice").textContent = status.subscription_price_yen;
+  $("paywallStatus").textContent = "";
+  $("paywallModal").hidden = false;
+}
+function closePaywallModal(){ $("paywallModal").hidden = true; }
+$("closePaywallModal").addEventListener("click", closePaywallModal);
+$("paywallModal").addEventListener("click", e=>{ if(e.target.id==="paywallModal") closePaywallModal(); });
+
+$("paywallSingleBtn").addEventListener("click", ()=> startCheckout("single"));
+$("paywallSubBtn").addEventListener("click", ()=> startCheckout("subscription"));
+$("subscribeBtn")?.addEventListener("click", ()=> startCheckout("subscription"));
+
+async function startCheckout(plan){
+  if(plan === "subscription" && !authToken){
+    $("paywallStatus").textContent = "使い放題プランのご利用にはログインが必要です。";
+    closePaywallModal();
+    openAuthModal("login");
+    return;
+  }
+  const body = { plan };
+  if(plan === "single" && selectedStyle && baseGenerations[selectedStyle]){
+    body.generation_id = baseGenerations[selectedStyle].generation_id;
+  }
+  const statusEl = $("paywallStatus");
+  if(statusEl) statusEl.textContent = "決済ページに移動しています…";
+  try{
+    const res = await fetch(`${API_BASE}/api/checkout`, {
+      method: "POST", headers: {"Content-Type":"application/json", ...authHeaders()},
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if(!res.ok){
+      if(statusEl) statusEl.textContent = data.detail || "エラーが発生しました。";
+      return;
+    }
+    window.location.href = data.checkout_url;
+  }catch(err){
+    if(statusEl) statusEl.textContent = "サーバーに接続できませんでした。";
+  }
+}
+
+/* ---- 料金プラン表示・広告表示・決済完了後の復帰処理 ---- */
+(async function initPricing(){
+  try{
+    const res = await fetch(`${API_BASE}/api/download-status`, { headers: authHeaders() });
+    const data = await res.json();
+    if(data.free_limit_today && $("pricingFreeCount")) $("pricingFreeCount").textContent = data.free_limit_today;
+    if(data.adsense_publisher_id) loadAd(data.adsense_publisher_id);
+  }catch(err){ /* 料金表示は失敗しても致命的ではないので黙って諦める */ }
+})();
+
+function loadAd(publisherId){
+  // 使い放題プラン加入者にはdownload-statusのadsense_publisher_idが空で返るため
+  // (main.pyの/api/download-status参照)、ここに来る時点で広告表示対象と判定済み。
+  const slot = $("adSlot");
+  if(!slot || slot.dataset.loaded) return;
+  slot.dataset.loaded = "true";
+  const script = document.createElement("script");
+  script.async = true;
+  script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${publisherId}`;
+  script.crossOrigin = "anonymous";
+  document.head.appendChild(script);
+
+  const ins = document.createElement("ins");
+  ins.className = "adsbygoogle";
+  ins.style.display = "block";
+  ins.setAttribute("data-ad-client", publisherId);
+  ins.setAttribute("data-ad-format", "auto");
+  ins.setAttribute("data-full-width-responsive", "true");
+  // TODO: 広告ユニットをAdSense管理画面で作成後、data-ad-slotに実際のスロットIDを設定する
+  slot.appendChild(ins);
+  slot.hidden = false;
+  (window.adsbygoogle = window.adsbygoogle || []).push({});
+}
+
+(function handleCheckoutReturn(){
+  const params = new URLSearchParams(window.location.search);
+  const checkout = params.get("checkout");
+  if(!checkout) return;
+  if(checkout === "success"){
+    const generationId = params.get("generation_id");
+    const plan = params.get("plan");
+    const msg = plan === "subscription"
+      ? "使い放題プランへのご登録ありがとうございます!広告なしで何点でもダウンロードできます。"
+      : "ご購入ありがとうございます!ダウンロードが可能になりました。";
+    alert(msg);
+    if(generationId){
+      // ページ再読み込みで作業中の状態は失われているため、購入した作品を
+      // generation_id から直接取得してダウンロードする。
+      fetch(`${API_BASE}/api/result/${generationId}`).then(r=>r.blob()).then(blob=>{
+        triggerDownload(blob, `落書きアート_${generationId}.png`);
+      });
+    }
+  }
+  const url = new URL(window.location);
+  url.searchParams.delete("checkout");
+  url.searchParams.delete("generation_id");
+  url.searchParams.delete("plan");
+  window.history.replaceState({}, "", url);
+})();
+
+/* ==================== みんなのRAKUMOに投稿する(5ステップ) ==================== */
+const PREFECTURES = [
+  "北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県",
+  "茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県",
+  "新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県",
+  "静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県",
+  "奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県",
+  "徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県",
+  "熊本県","大分県","宮崎県","鹿児島県","沖縄県",
+];
+
+const THEMES = ["夏","家族","恐竜","夢","動物","乗り物","宇宙","その他"];
+
+(function populatePostFlowOptions(){
+  const ageSelect = $("postAge");
+  if(ageSelect){
+    for(let age=3; age<=8; age++){
+      const opt = document.createElement("option");
+      opt.value = String(age); opt.textContent = `${age}歳`;
+      ageSelect.appendChild(opt);
+    }
+    const opt9 = document.createElement("option");
+    opt9.value = "9"; opt9.textContent = "9歳以上";
+    ageSelect.appendChild(opt9);
+  }
+  const prefSelect = $("postPrefecture");
+  if(prefSelect){
+    PREFECTURES.forEach(name=>{
+      const opt = document.createElement("option");
+      opt.value = name; opt.textContent = name;
+      prefSelect.appendChild(opt);
+    });
+  }
+  const themeSelect = $("postTheme");
+  if(themeSelect){
+    THEMES.forEach(name=>{
+      const opt = document.createElement("option");
+      opt.value = name; opt.textContent = name;
+      themeSelect.appendChild(opt);
+    });
+  }
+})();
+
+let postFlowGenerationId = null;
+
+function openPostModal(){
+  if(!selectedStyle || !baseGenerations[selectedStyle]){
+    alert("先にスタイルを選んでください。");
+    return;
+  }
+  postFlowGenerationId = baseGenerations[selectedStyle].generation_id;
+
+  $("postTitle").value = "";
+  $("postAuthorName").value = "";
+  $("postDescription").value = "";
+  $("postAge").value = "";
+  $("postPrefecture").value = "";
+  $("postTheme").value = "";
+  $("sharePrefectureCheck").checked = true;
+  $("postStep2Status").textContent = "";
+  $("postStep4Status").textContent = "";
+
+  goToPostStep(2);
+  $("postModal").hidden = false;
+}
+function closePostModal(){ $("postModal").hidden = true; }
+
+function goToPostStep(step){
+  [2,3,4,5].forEach(n=>{
+    $(`postStep${n}`).hidden = (n !== step);
+  });
+  document.querySelectorAll(".post-step-dot").forEach(dot=>{
+    const dotStep = Number(dot.dataset.step);
+    dot.classList.toggle("active", dotStep === step);
+    dot.classList.toggle("done", dotStep < step);
+  });
+}
+
+$("openPostFlowBtn")?.addEventListener("click", openPostModal);
+$("closePostModal")?.addEventListener("click", closePostModal);
+$("closePostFlowBtn")?.addEventListener("click", closePostModal);
+$("postModal")?.addEventListener("click", (e)=>{ if(e.target.id === "postModal") closePostModal(); });
+
+$("toStep3Btn")?.addEventListener("click", ()=>{
+  if(!$("postTitle").value.trim()){
+    $("postStep2Status").textContent = "タイトルを入力してください。";
+    return;
+  }
+  $("postStep2Status").textContent = "";
+
+  const hasAuthor = !!$("postAuthorName").value.trim();
+  const hasAge = !!$("postAge").value;
+  const hasPref = !!$("postPrefecture").value;
+  $("publicAuthorLine").classList.toggle("show", hasAuthor);
+  $("publicAgeLine").classList.toggle("show", hasAge);
+  $("publicPrefLine").classList.toggle("show", hasPref);
+  $("sharePrefectureCheck").closest(".post-checkbox-row").hidden = !hasPref;
+
+  goToPostStep(3);
+});
+
+$("backToStep2Btn")?.addEventListener("click", ()=> goToPostStep(2));
+
+$("toStep4Btn")?.addEventListener("click", ()=>{
+  const title = $("postTitle").value.trim();
+  const author = $("postAuthorName").value.trim();
+  const desc = $("postDescription").value.trim();
+  const age = $("postAge").value;
+  const pref = $("sharePrefectureCheck").checked ? $("postPrefecture").value : "";
+  const theme = $("postTheme").value;
+
+  $("postPreviewImg").src = `${API_BASE}${displayGenerations[selectedStyle].image_url}`;
+  $("postPreviewTitle").textContent = title;
+  const metaParts = [];
+  if(author) metaParts.push(author);
+  if(age) metaParts.push(age === "9" ? "9歳以上" : `${age}歳`);
+  if(pref) metaParts.push(pref);
+  if(theme) metaParts.push(`#${theme}`);
+  $("postPreviewMeta").textContent = metaParts.join(" ・ ") || "作者名・年齢・地域は非公開";
+  $("postPreviewDesc").textContent = desc;
+
+  goToPostStep(4);
+});
+
+$("backToStep3Btn")?.addEventListener("click", ()=> goToPostStep(3));
+
+$("submitPostBtn")?.addEventListener("click", async ()=>{
+  if(!postFlowGenerationId) return;
+  const title = $("postTitle").value.trim();
+  const author = $("postAuthorName").value.trim();
+  const desc = $("postDescription").value.trim();
+  const age = $("postAge").value;
+  const pref = $("sharePrefectureCheck").checked ? $("postPrefecture").value : "";
+  const theme = $("postTheme").value;
+
+  $("submitPostBtn").disabled = true;
+  $("postStep4Status").textContent = "投稿しています…";
+  try{
+    const res = await fetch(`${API_BASE}/api/gallery/publish`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json", ...authHeaders()},
+      body: JSON.stringify({
+        generation_id: postFlowGenerationId,
+        title,
+        author_name: author || null,
+        description: desc || null,
+        child_age: age ? Number(age) : null,
+        prefecture: pref || null,
+        theme: theme || null,
+      }),
+    });
+    if(!res.ok){
+      const err = await res.json().catch(()=>({detail:"投稿に失敗しました"}));
+      $("postStep4Status").textContent = err.detail || "投稿に失敗しました。";
+      $("submitPostBtn").disabled = false;
+      return;
+    }
+    goToPostStep(5);
+  }catch(err){
+    $("postStep4Status").textContent = "サーバーに接続できませんでした。";
+  }finally{
+    $("submitPostBtn").disabled = false;
+  }
+});
+
+/* ---- 起動時にスタイル一覧を取得 ---- */
+(async function init(){
+  try{
+    const r = await fetch(`${API_BASE}/api/styles`);
+    if(r.ok){
+      const list = await r.json();
+      list.forEach(s=> STYLE_META[s.id] = s);
+    }
+  }catch(err){
+    console.warn("バックエンドに接続できませんでした。起動しているか確認してください。", err);
+  }
+})();
+
+/* ---- ギャラリーの「作品を投稿する」から来た場合、自動でアップロード画面を開く ---- */
+(function handleGalleryEntry(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.get("post") === "1"){
+    $("galleryWelcomeMsg").hidden = false;
+    openModal();
+    const url = new URL(window.location);
+    url.searchParams.delete("post");
+    window.history.replaceState({}, "", url);
+  }
+})();

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理画面 - 落書きアート RAKUMO</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Hiragino Sans, sans-serif;
+    background: #f0ece4; color: #1a1a1a;
+  }
+  header {
+    background: #1a1a1a; color: #fff; padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  header h1 { font-size: 16px; margin: 0; font-weight: 700; }
+  header .status { font-size: 12px; color: #aaa; }
+
+  #loginScreen {
+    max-width: 360px; margin: 80px auto; background: #fff; padding: 32px;
+    border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); text-align: center;
+  }
+  #loginScreen h2 { font-size: 18px; margin-bottom: 20px; }
+  #loginScreen input {
+    width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 8px;
+    font-size: 14px; margin-bottom: 12px; box-sizing: border-box;
+  }
+  #loginScreen button, .action-btn, .toggle-btn {
+    cursor: pointer; border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+  }
+  #loginScreen button {
+    width: 100%; padding: 11px; background: #f08970; color: #fff; font-size: 14px;
+  }
+  #loginError { color: #d64545; font-size: 12.5px; margin-top: 8px; min-height: 16px; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .toggle-btn {
+    padding: 8px 16px; background: #fff; border: 1.5px solid #ddd; color: #555;
+  }
+  .toggle-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .toolbar .count { font-size: 13px; color: #777; margin-left: auto; }
+
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  th, td { padding: 10px 12px; text-align: left; font-size: 13px; border-bottom: 1px solid #f0ece4; vertical-align: middle; }
+  th { background: #faf7f2; font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.04em; }
+  tr:last-child td { border-bottom: none; }
+  td img { width: 48px; height: 48px; object-fit: cover; border-radius: 6px; display: block; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+  .badge-published { background: #e3f3e5; color: #2e6b3e; }
+  .badge-hidden { background: #f0f0f0; color: #888; }
+  .badge-reported { background: #fde3e3; color: #c0392b; }
+  .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .action-btn { padding: 6px 10px; font-size: 12px; }
+  .action-btn.unpublish { background: #fff3ef; color: #c0392b; }
+  .action-btn.republish { background: #e3f3e5; color: #2e6b3e; }
+  .action-btn.delete { background: #f0f0f0; color: #555; }
+  .action-btn.delete:hover { background: #d64545; color: #fff; }
+  .loading, .empty { text-align: center; padding: 40px; color: #999; }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <h2>🔐 管理画面ログイン</h2>
+  <input type="password" id="tokenInput" placeholder="管理者トークンを入力">
+  <button id="loginBtn">ログイン</button>
+  <div id="loginError"></div>
+</div>
+
+<div id="adminApp" hidden>
+  <header>
+    <h1>落書きアート RAKUMO — 管理画面</h1>
+    <span class="status">みんなのRAKUMO 投稿管理</span>
+  </header>
+  <main>
+    <div class="toolbar">
+      <button class="toggle-btn active" data-filter="all">すべて</button>
+      <button class="toggle-btn" data-filter="reported">通報ありのみ</button>
+      <span class="count" id="itemCount"></span>
+      <button id="cleanupBtn" class="action-btn" style="background:#eef5ff;color:#2a5d8a;padding:8px 14px;">🧹 未公開の古いデータを整理</button>
+    </div>
+    <div id="cleanupResult" style="font-size:12.5px;color:#777;margin-bottom:14px;min-height:16px;"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>作品</th>
+          <th>タイトル / 作者</th>
+          <th>スタイル</th>
+          <th>状態</th>
+          <th>拍手</th>
+          <th>通報</th>
+          <th>投稿日</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr><td colspan="8" class="loading">読み込み中…</td></tr>
+      </tbody>
+    </table>
+  </main>
+</div>
+
+<script src="config.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

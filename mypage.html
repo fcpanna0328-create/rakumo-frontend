@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>マイページ - 落書きアート RAKUMO</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="style.css">
+<style>
+  .mypage-main{ max-width:1100px; margin:0 auto; padding:40px 24px 80px; }
+  .mypage-title{ font-size:32px; margin-bottom:6px; }
+  .mypage-sub{ color:var(--ink-soft); font-size:14px; margin-bottom:32px; }
+
+  .login-banner{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    background:var(--cream-2); border:1px solid var(--hairline); border-radius:14px;
+    padding:16px 22px; margin-bottom:32px; font-size:14px;
+  }
+  .login-banner[hidden]{ display:none; }
+
+  .mypage-section{ margin-bottom:48px; }
+  .mypage-section h2{
+    font-size:20px; margin-bottom:16px; display:flex; align-items:center; gap:8px;
+  }
+  .section-count{ font-size:13px; color:var(--ink-soft); font-weight:400; }
+
+  .mypage-grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:20px;
+  }
+  @media (max-width:900px){ .mypage-grid{ grid-template-columns:repeat(3,1fr); } }
+  @media (max-width:640px){ .mypage-grid{ grid-template-columns:repeat(2,1fr); } }
+
+  .mp-card{
+    border-radius:14px; overflow:hidden; background:#fff;
+    box-shadow:0 2px 6px rgba(26,20,14,0.06); border:1px solid rgba(26,20,14,0.06);
+  }
+  .mp-thumb{ position:relative; width:100%; padding-top:100%; background:#f0ece4; }
+  .mp-thumb img{ position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; display:block; }
+  .mp-info{ padding:12px 14px 14px; }
+  .mp-badge{
+    display:inline-block; font-size:11px; font-weight:700; border-radius:6px;
+    padding:2px 8px; margin-bottom:8px;
+  }
+  .mp-badge-published{ color:#2e7d32; background:#eaf6ea; }
+  .mp-badge-draft{ color:#999; background:#f2f0eb; }
+  .mp-caption{
+    font-size:14px; font-weight:700; color:var(--ink); margin-bottom:4px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .mp-meta{ font-size:12px; color:var(--ink-soft); margin-bottom:10px; }
+  .mp-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  .mp-btn{
+    border-radius:999px; border:1px solid var(--hairline); background:#fff;
+    font-size:12px; padding:6px 12px; cursor:pointer; font-family:inherit; color:var(--ink);
+  }
+  .mp-btn:hover{ background:var(--cream-2); }
+  .mp-btn-danger{ color:#c0392b; border-color:#f0c9c2; }
+  .mp-btn-danger:hover{ background:#fdf0ee; }
+
+  .mp-empty{
+    text-align:center; padding:40px 20px; color:var(--ink-soft); font-size:14px;
+    background:#fff; border:1px dashed var(--hairline); border-radius:14px;
+  }
+  .mp-empty a{ color:var(--coral-dark); font-weight:600; }
+  .mp-loading{ text-align:center; padding:40px; color:var(--ink-soft); font-size:14px; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo-block">
+    <div class="logo-eyebrow">落書きアート</div>
+    <div class="logo-word"><span class="rakumo-brand">RAKUMO</span> <img src="assets/rakumo_cloud_mark.png" class="rakumo-mark" alt=""></div>
+    <div class="logo-sub">DOODLE ART</div>
+  </div>
+  <nav class="site-nav">
+    <a href="index.html#how">使い方</a>
+    <a href="index.html#styles">アートスタイル</a>
+    <a href="gallery.html">みんなのRAKUMO</a>
+    <a href="index.html#pricing">料金プラン</a>
+    <button id="loginBtn" class="btn-pill btn-pill-primary">ログイン</button>
+    <span id="userInfo" class="user-info" hidden>
+      <span id="userEmail"></span>
+      <button id="logoutBtn" class="btn-pill btn-pill-ghost">ログアウト</button>
+    </span>
+  </nav>
+</header>
+
+<main class="mypage-main">
+  <h1 class="mypage-title">マイページ</h1>
+  <p class="mypage-sub">投稿した作品と、拍手した作品を確認できます。</p>
+
+  <div id="loginBanner" class="login-banner" hidden>
+    <span>ログインすると、どの端末からでも自分の投稿を管理できます。</span>
+    <button id="loginBannerBtn" class="btn-pill btn-pill-primary">ログインする</button>
+  </div>
+
+  <section class="mypage-section">
+    <h2>投稿した作品 <span id="myArtworksCount" class="section-count"></span></h2>
+    <div id="myArtworksArea"><div class="mp-loading">読み込み中…</div></div>
+  </section>
+
+  <section class="mypage-section">
+    <h2>拍手した作品 <span id="myClapsCount" class="section-count"></span></h2>
+    <div id="myClapsArea"><div class="mp-loading">読み込み中…</div></div>
+  </section>
+</main>
+
+<!-- ==================== ログイン・新規登録モーダル ==================== -->
+<div id="authModal" class="app-modal" hidden>
+  <div class="app-modal-inner auth-modal-inner">
+    <button id="closeAuthModal" class="modal-close">×</button>
+    <div class="auth-tabs">
+      <button type="button" id="authTabLogin" class="auth-tab active">ログイン</button>
+      <button type="button" id="authTabSignup" class="auth-tab">新規登録</button>
+    </div>
+    <form id="authForm">
+      <label class="auth-label" for="authEmail">メールアドレス</label>
+      <input class="auth-input" type="email" id="authEmail" required>
+      <label class="auth-label" for="authPassword">パスワード</label>
+      <input class="auth-input" type="password" id="authPassword" required minlength="6">
+      <button type="submit" id="authSubmitBtn" class="btn-pill btn-pill-primary">ログイン</button>
+      <div id="authStatus" class="status-msg"></div>
+    </form>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="mypage.js?v=1"></script>
+</body>
+</html>

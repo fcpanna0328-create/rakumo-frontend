@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>落書きアート RAKUMO — その一枚が宝物に</title>
+<meta name="description" content="小さい頃に描いた、あの一枚。落書きをアートに変え、いつも目の届く場所に飾れるように。それがRAKUMOの願いです。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="落書きアート RAKUMO — その一枚が宝物に">
+<meta property="og:description" content="子どもの落書きを8種類のアートスタイルに変換。額装して飾れる、世界にひとつの作品に。">
+<!-- TODO: 本番ドメイン確定後、og:imageは絶対URLに変更すること(相対パスはSNSクローラーに認識されない) -->
+<meta property="og:image" content="assets/asset_after.png">
+<meta property="og:site_name" content="落書きアート RAKUMO">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo-block">
+    <div class="logo-eyebrow">落書きアート</div>
+    <div class="logo-word"><span class="rakumo-brand">RAKUMO</span> <img src="assets/rakumo_cloud_mark.png" class="rakumo-mark" alt=""></div>
+    <div class="logo-sub">DOODLE ART</div>
+  </div>
+  <nav class="site-nav">
+    <a href="#how">使い方</a>
+    <a href="#styles">アートスタイル</a>
+    <a href="#gallery">みんなのRAKUMO</a>
+    <a href="#pricing">料金プラン</a>
+    <a href="#faq">よくある質問</a>
+    <button id="loginBtn" class="btn-pill btn-pill-primary">ログイン</button>
+    <span id="userInfo" class="user-info" hidden>
+      <a href="mypage.html">マイページ</a>
+      <span id="userEmail"></span>
+      <button id="logoutBtn" class="btn-pill btn-pill-ghost">ログアウト</button>
+    </span>
+  </nav>
+</header>
+
+<section class="hero">
+  <svg class="hero-decor hero-decor-left" aria-hidden="true" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10 120 C 40 60, 70 180, 100 90 C 120 30, 140 140, 170 70" fill="none" stroke="#8FBF8A" stroke-width="6" stroke-linecap="round" opacity="0.3"/>
+  </svg>
+  <svg class="hero-decor hero-decor-right" aria-hidden="true" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+    <path d="M20 60 C 60 20, 80 110, 130 50 C 160 15, 180 90, 205 50" fill="none" stroke="#F0847A" stroke-width="6" stroke-linecap="round" opacity="0.28"/>
+  </svg>
+
+  <div class="hero-intro">
+    <div class="hero-brand">
+      落書きアート
+      <span class="rakumo-inline rakumo-brand">RAKUMO</span> <img src="assets/rakumo_cloud_mark.png" class="rakumo-mark" alt="">
+    </div>
+    <h1 class="hero-headline">
+      落書きを宝物に。
+      <svg class="tagline-underline" viewBox="0 0 220 16" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="brushFade" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="currentColor" stop-opacity="1"/>
+            <stop offset="52%" stop-color="currentColor" stop-opacity="0.95"/>
+            <stop offset="78%" stop-color="currentColor" stop-opacity="0.55"/>
+            <stop offset="100%" stop-color="currentColor" stop-opacity="0.12"/>
+          </linearGradient>
+        </defs>
+        <path fill="url(#brushFade)" d="M0,2.5 C20,0.5 36,3.5 54,2.5 C80,1.2 100,3.5 122,4.5 C144,5.4 162,6.4 180,7.4 C192,8.1 202,8.6 213,9 L215,11 C203,10.4 191,10 178,10.6 C158,11.4 136,12.6 111,13.4 C82,14.3 50,15.2 20,15.6 C10,15.7 3,15 0,13.2 Z"/>
+        <path fill="url(#brushFade)" opacity="0.75" d="M207,7.6 C211,7.1 215,7.9 219,7.3 L219.6,9.3 C215.5,9.9 211,9.3 206.5,9.7 Z"/>
+      </svg>
+    </h1>
+    <p class="hero-desc">小さい頃に描いた、あの一枚。<br>
+      引き出しの奥で、そのまま眠っていませんか。<br><br>
+      かけがえのない子どもの思い出を、目に見えるかたちに——<br>
+      落書きをアートに変え、いつも目の届く場所に飾れるように。<br><br>
+      それが、RAKUMOの願いです。</p>
+  </div>
+
+  <div class="hero-showcase">
+    <div class="transform-group">
+      <div class="before-card">
+        <div class="chip">BEFORE</div>
+        <img src="assets/asset_before.png" alt="変換前の落書き">
+      </div>
+      <div class="transform-arrow" aria-hidden="true">
+        <svg viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 30 H68 M48 12 L82 30 L48 48" fill="none" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="after-card-wrap">
+        <div class="after-card">
+          <div class="chip chip-after">AFTER</div>
+          <img src="assets/asset_after.png" alt="変換後のアート作品">
+        </div>
+        <div class="after-caption">作例:キュビズム風</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-cta">
+    <button id="openUploadBtn" class="btn-pill btn-pill-primary btn-lg">
+      <span class="icon">⬆</span> 絵をアップロードする
+      <small>写真を選んで、アートに変身!</small>
+    </button>
+    <button id="openSampleBtn" class="btn-pill btn-pill-ghost btn-lg">
+      <span class="icon">✎</span> サンプルで試す
+    </button>
+    <div class="hero-note">サンプルの落書きで体験してみる</div>
+  </div>
+</section>
+
+<section id="how" class="how-section">
+  <div class="how-card">
+    <h2>RAKUMOの使い方</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num" style="background:#F0847A">1</div>
+        <div class="step-title">絵をアップロード</div>
+        <div class="step-desc">落書きを撮影またはアップロードします</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="step-num" style="background:#E8934A">2</div>
+        <div class="step-title">スタイルを選ぶ</div>
+        <div class="step-desc">8つのアートスタイルから好きなものを選びます</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="step-num" style="background:#4F9B5C">3</div>
+        <div class="step-title">RAKUMOで変身</div>
+        <div class="step-desc">それぞれの技法で落書きをアート作品に変換します</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="step-num" style="background:#3E7FBF">4</div>
+        <div class="step-title">保存&amp;シェア</div>
+        <div class="step-desc">宝物として保存したり家族や友達とシェア!</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="styles" class="styles-section">
+  <h2>8つのアートスタイル</h2>
+  <p class="section-sub">8つのスタイルから、あなたの落書きにぴったりのテイストを選べます</p>
+  <div class="styles-scroll">
+    <div class="style-card"><img src="assets/style_andy.png"><div class="style-label">アンディ風<span>反復</span></div></div>
+    <div class="style-card"><img src="assets/style_dynamic.png"><div class="style-label">ダイナミックアート<span>大胆な構図</span></div></div>
+    <div class="style-card"><img src="assets/style_matisse.png"><div class="style-label">マティス風<span>切り絵</span></div></div>
+    <div class="style-card"><img src="assets/style_rothko.png"><div class="style-label">ロスコ風<span>カラーフィールド</span></div></div>
+    <div class="style-card"><img src="assets/style_mirror.png"><div class="style-label">ミラーリング<span>左右対称</span></div></div>
+    <div class="style-card"><img src="assets/style_cubism.png"><div class="style-label">キュビズム風<span>多視点</span></div></div>
+    <div class="style-card"><img src="assets/style_lichtenstein.png"><div class="style-label">リキテンスタイン風<span>ポップアート</span></div></div>
+    <div class="style-card"><img src="assets/style_triptych.png"><div class="style-label">トリプティク<span>三連画</span></div></div>
+  </div>
+</section>
+
+<section id="gallery" class="gallery-section">
+  <h2>みんなの<span class="rakumo-brand">RAKUMO</span> <img src="assets/rakumo_cloud_mark.png" class="rakumo-mark" alt=""></h2>
+  <p class="section-sub light">RAKUMOで生まれた、みんなの作品</p>
+  <div class="free-badge">今なら1ヶ月間 無料</div>
+
+  <div class="gallery-room">
+    <div class="gallery-grid">
+      <figure class="framed"><img src="assets/gallery_1.png"><figcaption>@yuna_art</figcaption></figure>
+      <figure class="framed"><img src="assets/gallery_2.png"><figcaption>@haruto_8</figcaption></figure>
+      <figure class="framed"><img src="assets/gallery_3.png"><figcaption>@sosuke_2020</figcaption></figure>
+      <figure class="framed"><img src="assets/gallery_4.png"><figcaption>@mama_no_oto</figcaption></figure>
+      <figure class="framed"><img src="assets/gallery_5.png"><figcaption>@kanata_smile</figcaption></figure>
+      <figure class="framed"><img src="assets/gallery_6.png"><figcaption>@eri_kidsart</figcaption></figure>
+    </div>
+    <div class="floor"></div>
+  </div>
+  <a href="gallery.html" class="btn-pill btn-pill-outline">ギャラリーを見る ›</a>
+</section>
+
+<section id="pricing" class="pricing-section">
+  <h2>料金プラン</h2>
+  <p class="section-sub">作品を作るのはいつでも無料。ダウンロードだけ、プランに応じたご利用になります</p>
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <div class="pricing-name">無料プラン</div>
+      <div class="pricing-price">¥0</div>
+      <div class="pricing-desc">1日<span id="pricingFreeCount">1</span>点までダウンロード無料<br><span class="pricing-note-inline">(リリースから1ヶ月間は1日3点無料)</span></div>
+      <ul class="pricing-features">
+        <li>作品づくりはいつでも無制限</li>
+        <li>広告が表示されます</li>
+      </ul>
+    </div>
+    <div class="pricing-card">
+      <div class="pricing-name">都度購入</div>
+      <div class="pricing-price">¥200<span>/点</span></div>
+      <div class="pricing-desc">無料枠を超えた分だけ<br>1点ずつダウンロードを購入</div>
+      <ul class="pricing-features">
+        <li>必要な作品だけ購入できる</li>
+        <li>広告が表示されます</li>
+      </ul>
+    </div>
+    <div class="pricing-card featured">
+      <div class="pricing-badge">おすすめ</div>
+      <div class="pricing-name">使い放題プラン</div>
+      <div class="pricing-price">¥490<span>/月</span></div>
+      <div class="pricing-desc">ダウンロードし放題<br>広告表示もなし</div>
+      <ul class="pricing-features">
+        <li>何点でもダウンロードOK</li>
+        <li>広告なしで快適</li>
+        <li>いつでも解約OK</li>
+      </ul>
+      <button id="subscribeBtn" class="btn-pill btn-pill-primary">使い放題プランに登録</button>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band">
+  <div class="cta-inner">
+    <div>
+      <div class="cta-heart">♥</div>
+    </div>
+    <div class="cta-text">
+      <div class="cta-title">あなたの落書きも、宝物にしてみませんか?</div>
+      <div class="cta-sub">今すぐRAKUMOで、世界にひとつのアートを作ろう!</div>
+    </div>
+    <button id="ctaUploadBtn" class="btn-pill btn-pill-primary">絵をアップロードする</button>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div>利用規約　プライバシーポリシー　特定商取引法に基づく表記　お問い合わせ</div>
+  <div>© 2026 RAKUMO</div>
+</footer>
+
+<!-- ==================== 実際に動く生成モーダル ==================== -->
+<div id="appModal" class="app-modal" hidden>
+  <div class="app-modal-inner">
+    <button id="closeModal" class="modal-close">×</button>
+
+    <div id="uploadPane" class="pane">
+      <div id="galleryWelcomeMsg" class="gallery-welcome-msg" hidden>
+        🎉 みんなのRAKUMOへようこそ！さっそくお子さんの落書きをアップロードして、アートに変えてみましょう。
+      </div>
+      <h3>落書きをアップロード</h3>
+      <div id="dropzone" class="dropzone">
+        <strong>クリックして写真を選ぶ</strong>
+        <div>JPEG・PNG・HEIC(iPhone写真)に対応</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*,.heic,.heif" hidden>
+      <div class="or-row">または</div>
+      <button id="sampleBtnInner" class="btn-pill btn-pill-outline">サンプルの落書きで試す</button>
+      <div id="uploadStatus" class="status-msg"></div>
+    </div>
+
+    <div id="resultPane" class="pane" hidden>
+      <div class="result-layout">
+        <div class="orig-col">
+          <div class="orig-label">原画</div>
+          <canvas id="origCanvas"></canvas>
+        </div>
+        <div class="gallery-col">
+          <div class="gallery-head-row">
+            <h3>スタイルを選ぶ</h3>
+            <div class="rotate-controls">
+              <button id="rotateLeft" class="rotate-btn">⟲ 45°</button>
+              <span id="rotateAngle">0°</span>
+              <button id="rotateRight" class="rotate-btn">45° ⟳</button>
+            </div>
+          </div>
+          <div id="resultGrid" class="result-grid"></div>
+        </div>
+      </div>
+
+      <div id="featuredArea" class="featured-area" hidden>
+        <div id="roomPreview" class="room-preview"></div>
+        <div class="featured-actions">
+          <button id="downloadArtBtn" class="btn-pill btn-pill-primary">作品をダウンロード</button>
+          <button id="downloadFramedBtn" class="btn-pill btn-pill-outline">額装イメージをダウンロード</button>
+          <button id="openPostFlowBtn" class="btn-pill btn-pill-community">🎉 みんなのRAKUMOに投稿する</button>
+        </div>
+        <!-- 無料プラン・都度購入のユーザーにのみ表示する広告枠(使い放題プラン加入者には非表示)。
+             ADSENSE_PUBLISHER_ID未設定の間は空のまま何も表示されない。 -->
+        <div id="adSlot" class="ad-slot" hidden></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== ログイン・新規登録モーダル ==================== -->
+<div id="authModal" class="app-modal" hidden>
+  <div class="app-modal-inner auth-modal-inner">
+    <button id="closeAuthModal" class="modal-close">×</button>
+    <div class="auth-tabs">
+      <button type="button" id="authTabLogin" class="auth-tab active">ログイン</button>
+      <button type="button" id="authTabSignup" class="auth-tab">新規登録</button>
+    </div>
+    <form id="authForm">
+      <label class="auth-label" for="authEmail">メールアドレス</label>
+      <input class="auth-input" type="email" id="authEmail" required>
+      <label class="auth-label" for="authPassword">パスワード</label>
+      <input class="auth-input" type="password" id="authPassword" required minlength="6">
+      <button type="submit" id="authSubmitBtn" class="btn-pill btn-pill-primary">ログイン</button>
+      <div id="authStatus" class="status-msg"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ==================== ダウンロード課金モーダル ==================== -->
+<div id="paywallModal" class="app-modal" hidden>
+  <div class="app-modal-inner">
+    <button id="closePaywallModal" class="modal-close">×</button>
+    <h3>本日の無料ダウンロード枠を使い切りました</h3>
+    <p class="paywall-desc">続けてダウンロードするには、以下のいずれかをお選びください。</p>
+    <div class="paywall-options">
+      <div class="paywall-option">
+        <div class="paywall-option-title">この1点だけ購入</div>
+        <div class="paywall-option-price">¥<span id="paywallSinglePrice">200</span></div>
+        <button id="paywallSingleBtn" class="btn-pill btn-pill-outline">購入してダウンロード</button>
+      </div>
+      <div class="paywall-option featured">
+        <div class="pricing-badge">おすすめ</div>
+        <div class="paywall-option-title">使い放題プラン</div>
+        <div class="paywall-option-price">¥<span id="paywallSubPrice">490</span><span class="paywall-per">/月</span></div>
+        <button id="paywallSubBtn" class="btn-pill btn-pill-primary">登録してダウンロードし放題に</button>
+      </div>
+    </div>
+    <div id="paywallStatus" class="status-msg"></div>
+  </div>
+</div>
+
+<!-- ==================== みんなのRAKUMOに投稿する(5ステップ) ==================== -->
+<div id="postModal" class="app-modal" hidden>
+  <div class="app-modal-inner post-modal-inner">
+    <button id="closePostModal" class="modal-close">×</button>
+
+    <div class="post-steps-indicator">
+      <span class="post-step-dot active" data-step="2">1</span>
+      <span class="post-step-dot" data-step="3">2</span>
+      <span class="post-step-dot" data-step="4">3</span>
+      <span class="post-step-dot" data-step="5">4</span>
+    </div>
+
+    <!-- STEP2: 情報入力 -->
+    <div id="postStep2" class="post-step">
+      <h3>作品について教えてください</h3>
+      <label class="auth-label" for="postTitle">タイトル<span class="required-mark">必須</span></label>
+      <input class="auth-input" type="text" id="postTitle" maxlength="40" placeholder="例: ぼくのロケット">
+      <label class="auth-label" for="postAuthorName">作者のお名前・ニックネーム(任意)</label>
+      <input class="auth-input" type="text" id="postAuthorName" maxlength="20" placeholder="例: あやと(本名でなくてOK)">
+      <label class="auth-label" for="postDescription">この絵について一言(任意)</label>
+      <textarea class="auth-input post-textarea" id="postDescription" maxlength="200" placeholder="例: 恐竜が好きで、夜のジャングルを冒険しているところを描きました。"></textarea>
+      <div class="post-field-row">
+        <div>
+          <label class="auth-label" for="postAge">年齢(任意)</label>
+          <select class="auth-input" id="postAge">
+            <option value="">選択しない</option>
+          </select>
+        </div>
+        <div>
+          <label class="auth-label" for="postPrefecture">都道府県(任意)</label>
+          <select class="auth-input" id="postPrefecture">
+            <option value="">選択しない</option>
+          </select>
+        </div>
+      </div>
+      <label class="auth-label" for="postTheme">テーマ(任意)</label>
+      <select class="auth-input" id="postTheme">
+        <option value="">選択しない</option>
+      </select>
+      <div id="postStep2Status" class="status-msg"></div>
+      <button type="button" id="toStep3Btn" class="btn-pill btn-pill-primary post-next-btn">次へ</button>
+    </div>
+
+    <!-- STEP3: 公開設定 -->
+    <div id="postStep3" class="post-step" hidden>
+      <h3>公開設定</h3>
+      <div class="post-visibility-box">
+        <div class="post-visibility-col">
+          <div class="post-visibility-label ok">公開されるもの</div>
+          <ul class="post-visibility-list">
+            <li>作品(アート画像)</li>
+            <li>タイトル・一言</li>
+            <li id="publicAuthorLine" class="hidden-line">作者のお名前・ニックネーム</li>
+            <li id="publicAgeLine" class="hidden-line">年齢</li>
+            <li id="publicPrefLine" class="hidden-line">都道府県</li>
+          </ul>
+        </div>
+        <div class="post-visibility-col">
+          <div class="post-visibility-label ng">公開されないもの</div>
+          <ul class="post-visibility-list">
+            <li>本名・メールアドレス</li>
+            <li>顔写真</li>
+            <li>詳しい位置情報</li>
+          </ul>
+        </div>
+      </div>
+      <label class="post-checkbox-row">
+        <input type="checkbox" id="sharePrefectureCheck" checked>
+        入力した都道府県をMAPに公開する
+      </label>
+      <div class="post-step-actions">
+        <button type="button" id="backToStep2Btn" class="btn-pill btn-pill-outline">戻る</button>
+        <button type="button" id="toStep4Btn" class="btn-pill btn-pill-primary">次へ</button>
+      </div>
+    </div>
+
+    <!-- STEP4: プレビュー -->
+    <div id="postStep4" class="post-step" hidden>
+      <h3>この内容で投稿します</h3>
+      <div class="post-preview-card">
+        <img id="postPreviewImg" src="" alt="">
+        <div class="post-preview-info">
+          <div id="postPreviewTitle" class="post-preview-title"></div>
+          <div id="postPreviewMeta" class="post-preview-meta"></div>
+          <div id="postPreviewDesc" class="post-preview-desc"></div>
+        </div>
+      </div>
+      <div id="postStep4Status" class="status-msg"></div>
+      <div class="post-step-actions">
+        <button type="button" id="backToStep3Btn" class="btn-pill btn-pill-outline">戻る</button>
+        <button type="button" id="submitPostBtn" class="btn-pill btn-pill-primary">投稿する</button>
+      </div>
+    </div>
+
+    <!-- STEP5: 投稿完了 -->
+    <div id="postStep5" class="post-step" hidden>
+      <div class="post-complete-icon">🎉</div>
+      <h3>みんなのRAKUMOに投稿しました!</h3>
+      <p class="post-complete-sub">あなたの作品が全国のみんなに届きました。</p>
+      <div class="post-step-actions post-complete-actions">
+        <a href="gallery.html" class="btn-pill btn-pill-primary">ギャラリーで見る</a>
+        <button type="button" id="closePostFlowBtn" class="btn-pill btn-pill-outline">閉じる</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
