@@ -169,8 +169,8 @@ h1,h2{font-family:Georgia,"Hiragino Mincho ProN",serif;margin:0;}
 }
 .gallery-room{position:relative;background:#4a423b;border-radius:12px;padding:30px;}
 .gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding:0;}
-.framed{margin:0;display:flex;flex-direction:column;min-height:450px;}
-.framed img{width:100%;height:100%;object-fit:cover;border:16px solid #1a1a1a;box-shadow:0 14px 24px rgba(0,0,0,.4);}
+.framed{margin:0;display:flex;flex-direction:column;}
+.framed img{width:100%;aspect-ratio:4/5;object-fit:cover;border:16px solid #1a1a1a;box-shadow:0 14px 24px rgba(0,0,0,.4);box-sizing:border-box;display:block;}
 .framed figcaption{color:#e8ddcb;font-size:11px;margin-top:6px;text-align:center;}
 .floor{display:none!important;}
 .gallery-section .btn-pill-outline{background:transparent;color:#fff;border-color:rgba(255,255,255,.5);margin-top:26px;}
@@ -388,4 +388,6 @@ h1,h2{font-family:Georgia,"Hiragino Mincho ProN",serif;margin:0;}
   .after-card-wrap{width:50%;}
   .after-caption{font-size:14px;}
   .transform-arrow{width:56px;height:40px;margin:0 -4px;}
+  .gallery-grid{grid-template-columns:repeat(2,1fr);gap:14px;}
+  .gallery-room{padding:18px;}
 }
