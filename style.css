@@ -261,6 +261,12 @@ h1,h2{font-family:Georgia,"Hiragino Mincho ProN",serif;margin:0;}
 #uploadPane .btn-pill{width:100%;justify-content:center;}
 .status-msg{font-size:13px;color:var(--coral-dark);margin-top:14px;min-height:16px;}
 
+.gen-progress{margin-bottom:18px;}
+.gen-progress-label{font-size:13px;color:var(--ink-soft);margin-bottom:8px;}
+.gen-progress-label span{color:var(--coral-dark);font-weight:700;font-variant-numeric:tabular-nums;}
+.gen-progress-bar{height:8px;border-radius:5px;background:#efe4d4;overflow:hidden;}
+.gen-progress-fill{height:100%;width:0%;background:var(--coral);border-radius:5px;transition:width .35s ease;}
+
 .result-layout{display:grid;grid-template-columns:260px 1fr;gap:28px;}
 .orig-label{font-size:12px;color:var(--ink-soft);margin-bottom:8px;}
 #origCanvas{width:100%;border-radius:6px;border:1px solid var(--hairline);background:#fff;}
