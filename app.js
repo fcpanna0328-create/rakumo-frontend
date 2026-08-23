@@ -213,7 +213,9 @@ const SAMPLE_GENERATIONS = {
 async function runSample(){
   motifId = SAMPLE_MOTIF_ID;
 
-  $("genProgress").hidden = true; // サンプルは即時表示のため進捗ゲージは不要
+  // サンプルは生成済みの結果を出すだけなので、進捗ゲージも失敗表示も不要
+  $("genProgress").hidden = true;
+  $("genFailed").hidden = true;
   $("uploadPane").hidden = true;
   $("resultPane").hidden = false;
   const origImg = new Image();
@@ -442,27 +444,86 @@ async function startGeneration(){
   progressFill.style.width = "0%";
   progressCount.textContent = `0/${STYLE_IDS.length}`;
 
-  let done = 0;
-  for(const styleId of STYLE_IDS){
+  await runGenerationQueue(STYLE_IDS);
+}
+
+/* 1スタイル分の生成。成功したらtrue。
+   Renderの無料プランでは、重いスタイルの処理中にサーバーのCPUが飽和し、
+   後続リクエスト(ブラウザが送るCORSプリフライトを含む)が一時的に502を
+   返すことがある。恒久的な失敗ではないので、少し待ってから再試行する。 */
+async function generateOneStyle(styleId, attempts = 3){
+  for(let i = 0; i < attempts; i++){
+    if(i > 0){
+      markThumbRetrying(styleId);
+      await new Promise(r=> setTimeout(r, 2500 * i)); // 待ち時間を少しずつ延ばす
+    }
     try{
       const r = await fetch(`${API_BASE}/api/generate`, {
         method:"POST", headers:{"Content-Type":"application/json", ...authHeaders()},
         body: JSON.stringify({motif_id: motifId, style: styleId})
       });
-      if(!r.ok){ console.error(styleId, await r.text()); continue; }
+      if(!r.ok){ console.error(styleId, r.status, await r.text().catch(()=>"")); continue; }
       const g = await r.json();
       baseGenerations[styleId] = g;
       displayGenerations[styleId] = {image_url: g.image_url};
       renderThumb(styleId, g.image_url);
+      return true;
     }catch(err){
       console.error(styleId, err);
-    }finally{
-      done++;
-      progressFill.style.width = `${Math.round(done/STYLE_IDS.length*100)}%`;
-      progressCount.textContent = `${done}/${STYLE_IDS.length}`;
     }
   }
+  return false;
+}
+
+/* 渡されたスタイル群を順番に生成し、失敗したものは画面に明示する。
+   以前は失敗をconsoleに出すだけだったため、生成されなかった枠が
+   プレースホルダーのまま永久に残り、ユーザーからは「固まった」ように
+   見えてしまっていた。 */
+async function runGenerationQueue(styleIds){
+  const progress = $("genProgress");
+  const progressFill = $("genProgressFill");
+  const progressCount = $("genProgressCount");
+  $("genFailed").hidden = true;
+  progress.hidden = false;
+  progressFill.style.width = "0%";
+  progressCount.textContent = `0/${styleIds.length}`;
+
+  let done = 0;
+  const failed = [];
+  for(const styleId of styleIds){
+    const ok = await generateOneStyle(styleId);
+    if(!ok){ failed.push(styleId); markThumbFailed(styleId); }
+    done++;
+    progressFill.style.width = `${Math.round(done/styleIds.length*100)}%`;
+    progressCount.textContent = `${done}/${styleIds.length}`;
+  }
   progress.hidden = true;
+
+  if(failed.length){
+    const names = failed.map(id=> STYLE_META[id]?.name || id).join("、");
+    $("genFailedMsg").textContent =
+      `${names} は混雑のため作成できませんでした。少し待ってからやり直せます。`;
+    $("genFailed").hidden = false;
+    $("retryFailedBtn").onclick = async ()=>{
+      $("retryFailedBtn").disabled = true;
+      await runGenerationQueue(failed);
+      $("retryFailedBtn").disabled = false;
+    };
+  }
+}
+
+function markThumbRetrying(styleId){
+  const card = $(`card-${styleId}`);
+  if(!card || baseGenerations[styleId]) return;
+  card.querySelector(".thumb").innerHTML =
+    `<span style="color:#b3a98c;font-size:11px;">再試行中…</span>`;
+}
+
+function markThumbFailed(styleId){
+  const card = $(`card-${styleId}`);
+  if(!card) return;
+  card.querySelector(".thumb").innerHTML =
+    `<span style="color:var(--coral-dark);font-size:11px;">作成できません<br>でした</span>`;
 }
 
 function renderThumb(styleId, imageUrl){
