@@ -199,8 +199,55 @@ async function runSample(){
   handleUpload(file);
 }
 
+/* ---- アップロード前の軽量化 ----
+   スマホのカメラ写真はそのままだと数MB〜十数MBになることがあり、
+   モバイル回線でのアップロードに時間がかかる。サーバー側もどのみち
+   長辺1200pxまで縮小してから処理するため(app/cleaning.py参照)、
+   それより十分大きい範囲でクライアント側にも縮小・圧縮させておくことで、
+   画質を落とさずアップロード時間だけを短縮する。
+   HEIC等、ブラウザがcanvasに描画できない形式の場合は元ファイルのまま送る
+   (サーバー側がHEICに対応済みのため、フォールバックとして安全)。 */
+const UPLOAD_MAX_DIM = 1600;
+const UPLOAD_JPEG_QUALITY = 0.85;
+
+function compressImageForUpload(file){
+  return new Promise((resolve)=>{
+    // 画像でない、または既に十分小さいファイルはそのまま
+    if(!file.type.startsWith("image/") || file.size < 500*1024){
+      resolve(file);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    const cleanup = ()=> URL.revokeObjectURL(url);
+    img.onload = ()=>{
+      try{
+        const scale = Math.min(1, UPLOAD_MAX_DIM / Math.max(img.width, img.height));
+        if(scale >= 1){ cleanup(); resolve(file); return; } // 既に十分小さい
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width*scale);
+        canvas.height = Math.round(img.height*scale);
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blob=>{
+          cleanup();
+          if(!blob || blob.size >= file.size){ resolve(file); return; } // 縮小できなければ元のまま
+          resolve(new File([blob], file.name.replace(/\.\w+$/, ".jpg"), {type:"image/jpeg"}));
+        }, "image/jpeg", UPLOAD_JPEG_QUALITY);
+      }catch(err){
+        cleanup();
+        resolve(file); // 何かあれば元のファイルで続行(アップロード自体は止めない)
+      }
+    };
+    img.onerror = ()=>{ cleanup(); resolve(file); }; // HEIC等デコードできない形式は元のまま
+    img.src = url;
+  });
+}
+
 /* ---- アップロード〜生成の本体 ---- */
 async function handleUpload(file){
+  $("uploadStatus").textContent = `「${file.name}」を処理中…`;
+  file = await compressImageForUpload(file);
   $("uploadStatus").textContent = `「${file.name}」をアップロード中…`;
   const form = new FormData();
   form.append("file", file);
