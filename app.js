@@ -250,14 +250,17 @@ async function handleUpload(file){
   });
   $("featuredArea").hidden = true;
 
-  // 8スタイルを並列で生成(完了したものから順にサムネイルを表示)
-  await Promise.all(STYLE_IDS.map(async (styleId)=>{
+  // 8スタイルを順番に生成。
+  // 注: 並列化も試したが、Renderの無料プランではCPU/メモリが非力なため
+  // 複数同時リクエストで502エラーが多発し逆に悪化することを確認済み(2026-08-23)。
+  // ホスティングを有料プランに上げた後であれば、Promise.allでの並列化を再検討してよい。
+  for(const styleId of STYLE_IDS){
     try{
       const r = await fetch(`${API_BASE}/api/generate`, {
         method:"POST", headers:{"Content-Type":"application/json", ...authHeaders()},
         body: JSON.stringify({motif_id: motifId, style: styleId})
       });
-      if(!r.ok){ console.error(styleId, await r.text()); return; }
+      if(!r.ok){ console.error(styleId, await r.text()); continue; }
       const g = await r.json();
       baseGenerations[styleId] = g;
       displayGenerations[styleId] = {image_url: g.image_url};
@@ -265,7 +268,7 @@ async function handleUpload(file){
     }catch(err){
       console.error(styleId, err);
     }
-  }));
+  }
 }
 
 function renderThumb(styleId, imageUrl){
