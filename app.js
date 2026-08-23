@@ -408,8 +408,11 @@ $("rotateRight").addEventListener("click", ()=> rotateBy(45));
 
 async function rotateBy(delta){
   rotationDeg = ((rotationDeg + delta) % 360 + 360) % 360;
-  updateRotateUI();
   $("rotateLeft").disabled = true; $("rotateRight").disabled = true;
+  // 8スタイル分の回転リクエストがRenderの無料プランでは数秒〜十数秒かかり、
+  // ボタンが薄くなるだけでは「反応していない」と誤解されやすいため、
+  // はっきり「回転中…」と表示する。
+  $("rotateAngle").textContent = "回転中…";
 
   const tasks = Object.keys(baseGenerations).map(async styleId=>{
     const base = baseGenerations[styleId];
@@ -427,6 +430,7 @@ async function rotateBy(delta){
   await Promise.all(tasks);
 
   if(selectedStyle) showFeatured();
+  updateRotateUI();
   $("rotateLeft").disabled = false; $("rotateRight").disabled = false;
 }
 
