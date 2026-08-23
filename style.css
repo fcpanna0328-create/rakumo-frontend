@@ -266,6 +266,13 @@ h1,h2{font-family:Georgia,"Hiragino Mincho ProN",serif;margin:0;}
 .orient-layout .rotate-controls{display:flex;align-items:center;gap:10px;}
 .orient-layout .btn-pill{width:auto;}
 
+.gen-failed{
+  display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:18px;
+  padding:12px 14px;border-radius:8px;background:#fff3ef;border:1px solid var(--coral);
+  font-size:13px;color:var(--coral-dark);
+}
+.gen-failed .btn-pill{width:auto;padding:6px 14px;font-size:12px;}
+
 .gen-progress{margin-bottom:18px;}
 .gen-progress-label{font-size:13px;color:var(--ink-soft);margin-bottom:8px;}
 .gen-progress-label span{color:var(--coral-dark);font-weight:700;font-variant-numeric:tabular-nums;}
