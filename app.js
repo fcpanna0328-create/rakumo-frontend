@@ -228,8 +228,7 @@ async function runSample(){
   };
   origImg.src = `${API_BASE}/api/motif/${motifId}`;
 
-  baseGenerations = {}; displayGenerations = {}; selectedStyle=null; rotationDeg=0;
-  updateRotateUI();
+  baseGenerations = {}; displayGenerations = {}; selectedStyle=null;
   const grid = $("resultGrid");
   grid.innerHTML = "";
   STYLE_IDS.forEach(id=>{
@@ -300,7 +299,15 @@ function compressImageForUpload(file){
   });
 }
 
-/* ---- アップロード〜生成の本体 ---- */
+/* ---- アップロード〜向き確認 ----
+   以前は「8スタイル生成 → できた8枚をまとめて回転」という順序だったが、
+   Renderの無料プランでは8枚同時の回転リクエストが処理しきれず失敗する
+   ことがあった。向きの調整は生成前の元画像1枚に対して行えば十分なので、
+   アップロード直後に向きだけ確認してもらい、その向きで1回だけ生成する
+   流れに変更した。回転そのものはここではクライアント側(canvas)だけで
+   完結し、サーバーには一切問い合わせない。 */
+let orientImg = null; // 向き確認中の元画像(Imageオブジェクト)
+
 async function handleUpload(file){
   $("uploadStatus").textContent = `「${file.name}」を処理中…`;
   file = await compressImageForUpload(file);
@@ -323,8 +330,79 @@ async function handleUpload(file){
   const data = await res.json();
   motifId = data.motif_id;
 
-  // 元画像プレビュー
+  // 向き確認画面へ
   $("uploadPane").hidden = true;
+  $("orientPane").hidden = false;
+  rotationDeg = 0;
+  updateRotateUI();
+  orientImg = new Image();
+  orientImg.crossOrigin = "anonymous";
+  orientImg.onload = ()=> drawOrientCanvas();
+  orientImg.src = `${API_BASE}/api/motif/${motifId}`;
+}
+
+function drawOrientCanvas(){
+  if(!orientImg) return;
+  const cv = $("orientCanvas");
+  const rad = rotationDeg * Math.PI/180;
+  const w = orientImg.width, h = orientImg.height;
+  // 回転後の外接矩形に合わせてcanvasサイズを決める(はみ出させず、切れないように)
+  const boundW = Math.abs(w*Math.cos(rad)) + Math.abs(h*Math.sin(rad));
+  const boundH = Math.abs(w*Math.sin(rad)) + Math.abs(h*Math.cos(rad));
+  const dispScale = Math.min(1, 340/Math.max(boundW, boundH));
+  cv.width = Math.round(boundW*dispScale);
+  cv.height = Math.round(boundH*dispScale);
+  const ctx = cv.getContext("2d");
+  ctx.fillStyle = "#fff"; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.save();
+  ctx.translate(cv.width/2, cv.height/2);
+  ctx.rotate(rad);
+  ctx.scale(dispScale, dispScale);
+  ctx.drawImage(orientImg, -w/2, -h/2, w, h);
+  ctx.restore();
+}
+
+function rotateOrientBy(delta){
+  rotationDeg = ((rotationDeg + delta) % 360 + 360) % 360;
+  updateRotateUI();
+  drawOrientCanvas();
+}
+
+function updateRotateUI(){
+  $("rotateAngle").textContent = `${rotationDeg}°`;
+}
+
+$("rotateLeft").addEventListener("click", ()=> rotateOrientBy(-45));
+$("rotateRight").addEventListener("click", ()=> rotateOrientBy(45));
+
+$("confirmOrientBtn").addEventListener("click", async ()=>{
+  $("confirmOrientBtn").disabled = true;
+  $("confirmOrientBtn").textContent = "作成の準備中…";
+  try{
+    if(rotationDeg !== 0){
+      // サーバー側で、既にアップロード済みのモチーフを回転させる
+      // (1日のアップロード上限は消費しない。以降の8スタイル生成は
+      //  すでに正しい向きになったモチーフから行われる)
+      const r = await fetch(`${API_BASE}/api/motif/rotate`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({motif_id: motifId, angle: rotationDeg})
+      });
+      if(r.ok){
+        const d = await r.json();
+        motifId = d.motif_id;
+      }
+      // 失敗した場合は元のmotifIdのまま(向き調整なし)で続行する
+    }
+  }finally{
+    $("confirmOrientBtn").disabled = false;
+    $("confirmOrientBtn").textContent = "この向きでアートを作成 →";
+  }
+  $("orientPane").hidden = true;
+  startGeneration();
+});
+
+/* ---- 生成本体(向き確認後、motifIdを使って8スタイルを生成) ---- */
+async function startGeneration(){
   $("resultPane").hidden = false;
   const origImg = new Image();
   origImg.crossOrigin = "anonymous";
@@ -339,8 +417,7 @@ async function handleUpload(file){
   origImg.src = `${API_BASE}/api/motif/${motifId}`;
 
   // グリッドを初期化してプレースホルダーを表示
-  baseGenerations = {}; displayGenerations = {}; selectedStyle=null; rotationDeg=0;
-  updateRotateUI();
+  baseGenerations = {}; displayGenerations = {}; selectedStyle=null;
   const grid = $("resultGrid");
   grid.innerHTML = "";
   STYLE_IDS.forEach(id=>{
@@ -400,42 +477,6 @@ function selectStyle(id){
   document.querySelectorAll(".result-card").forEach(c=>c.classList.remove("selected"));
   $(`card-${id}`).classList.add("selected");
   showFeatured();
-}
-
-/* ---- 回転(表示用。再生成はしない) ---- */
-$("rotateLeft").addEventListener("click", ()=> rotateBy(-45));
-$("rotateRight").addEventListener("click", ()=> rotateBy(45));
-
-async function rotateBy(delta){
-  rotationDeg = ((rotationDeg + delta) % 360 + 360) % 360;
-  $("rotateLeft").disabled = true; $("rotateRight").disabled = true;
-  // 8スタイル分の回転リクエストがRenderの無料プランでは数秒〜十数秒かかり、
-  // ボタンが薄くなるだけでは「反応していない」と誤解されやすいため、
-  // はっきり「回転中…」と表示する。
-  $("rotateAngle").textContent = "回転中…";
-
-  const tasks = Object.keys(baseGenerations).map(async styleId=>{
-    const base = baseGenerations[styleId];
-    try{
-      const r = await fetch(`${API_BASE}/api/rotate`, {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({generation_id: base.generation_id, angle: rotationDeg})
-      });
-      if(!r.ok) return;
-      const d = await r.json();
-      displayGenerations[styleId] = {image_url: d.image_url};
-      renderThumb(styleId, d.image_url);
-    }catch(err){ console.error(err); }
-  });
-  await Promise.all(tasks);
-
-  if(selectedStyle) showFeatured();
-  updateRotateUI();
-  $("rotateLeft").disabled = false; $("rotateRight").disabled = false;
-}
-
-function updateRotateUI(){
-  $("rotateAngle").textContent = `${rotationDeg}°`;
 }
 
 /* ---- 額装プレビュー(部屋のモックアップをcanvasで描画) ---- */
