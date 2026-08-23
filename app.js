@@ -213,6 +213,7 @@ const SAMPLE_GENERATIONS = {
 async function runSample(){
   motifId = SAMPLE_MOTIF_ID;
 
+  $("genProgress").hidden = true; // サンプルは即時表示のため進捗ゲージは不要
   $("uploadPane").hidden = true;
   $("resultPane").hidden = false;
   const origImg = new Image();
@@ -259,8 +260,11 @@ async function runSample(){
    画質を落とさずアップロード時間だけを短縮する。
    HEIC等、ブラウザがcanvasに描画できない形式の場合は元ファイルのまま送る
    (サーバー側がHEICに対応済みのため、フォールバックとして安全)。 */
-const UPLOAD_MAX_DIM = 1600;
-const UPLOAD_JPEG_QUALITY = 0.85;
+// サーバー側(app/cleaning.py)もどのみち長辺1200pxまで縮小してから処理するため、
+// アップロード時点でそれより大きく送っても最終的な画質には影響しない。
+// 1200pxに合わせることで、画質を落とさずに送信データ量をさらに削減できる。
+const UPLOAD_MAX_DIM = 1200;
+const UPLOAD_JPEG_QUALITY = 0.82;
 
 function compressImageForUpload(file){
   return new Promise((resolve)=>{
@@ -349,10 +353,19 @@ async function handleUpload(file){
   });
   $("featuredArea").hidden = true;
 
-  // 8スタイルを順番に生成。
+  // 8スタイルを順番に生成。生成中は「何が起きているか分からず不安」に
+  // ならないよう、進捗ゲージと件数を表示する。
   // 注: 並列化も試したが、Renderの無料プランではCPU/メモリが非力なため
   // 複数同時リクエストで502エラーが多発し逆に悪化することを確認済み(2026-08-23)。
   // ホスティングを有料プランに上げた後であれば、Promise.allでの並列化を再検討してよい。
+  const progress = $("genProgress");
+  const progressFill = $("genProgressFill");
+  const progressCount = $("genProgressCount");
+  progress.hidden = false;
+  progressFill.style.width = "0%";
+  progressCount.textContent = `0/${STYLE_IDS.length}`;
+
+  let done = 0;
   for(const styleId of STYLE_IDS){
     try{
       const r = await fetch(`${API_BASE}/api/generate`, {
@@ -366,8 +379,13 @@ async function handleUpload(file){
       renderThumb(styleId, g.image_url);
     }catch(err){
       console.error(styleId, err);
+    }finally{
+      done++;
+      progressFill.style.width = `${Math.round(done/STYLE_IDS.length*100)}%`;
+      progressCount.textContent = `${done}/${STYLE_IDS.length}`;
     }
   }
+  progress.hidden = true;
 }
 
 function renderThumb(styleId, imageUrl){
