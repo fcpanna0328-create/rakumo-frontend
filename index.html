@@ -253,6 +253,19 @@
       <div id="uploadStatus" class="status-msg"></div>
     </div>
 
+    <div id="orientPane" class="pane" hidden>
+      <h3>向きを確認してください</h3>
+      <div class="orient-layout">
+        <canvas id="orientCanvas"></canvas>
+        <div class="rotate-controls">
+          <button id="rotateLeft" class="rotate-btn">⟲ 45°</button>
+          <span id="rotateAngle">0°</span>
+          <button id="rotateRight" class="rotate-btn">45° ⟳</button>
+        </div>
+        <button id="confirmOrientBtn" class="btn-pill btn-pill-primary">この向きでアートを作成 →</button>
+      </div>
+    </div>
+
     <div id="resultPane" class="pane" hidden>
       <div id="genProgress" class="gen-progress" hidden>
         <div class="gen-progress-label">
@@ -268,11 +281,6 @@
         <div class="gallery-col">
           <div class="gallery-head-row">
             <h3>スタイルを選ぶ</h3>
-            <div class="rotate-controls">
-              <button id="rotateLeft" class="rotate-btn">⟲ 45°</button>
-              <span id="rotateAngle">0°</span>
-              <button id="rotateRight" class="rotate-btn">45° ⟳</button>
-            </div>
           </div>
           <div id="resultGrid" class="result-grid"></div>
         </div>
