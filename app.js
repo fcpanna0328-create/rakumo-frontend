@@ -250,15 +250,14 @@ async function handleUpload(file){
   });
   $("featuredArea").hidden = true;
 
-  // 8スタイルを順番に生成
-  for(const styleId of STYLE_IDS){
-    $("uploadStatus").textContent = ""; // アップロードペインは非表示なので実質未使用
+  // 8スタイルを並列で生成(完了したものから順にサムネイルを表示)
+  await Promise.all(STYLE_IDS.map(async (styleId)=>{
     try{
       const r = await fetch(`${API_BASE}/api/generate`, {
         method:"POST", headers:{"Content-Type":"application/json", ...authHeaders()},
         body: JSON.stringify({motif_id: motifId, style: styleId})
       });
-      if(!r.ok){ console.error(styleId, await r.text()); continue; }
+      if(!r.ok){ console.error(styleId, await r.text()); return; }
       const g = await r.json();
       baseGenerations[styleId] = g;
       displayGenerations[styleId] = {image_url: g.image_url};
@@ -266,7 +265,7 @@ async function handleUpload(file){
     }catch(err){
       console.error(styleId, err);
     }
-  }
+  }));
 }
 
 function renderThumb(styleId, imageUrl){
