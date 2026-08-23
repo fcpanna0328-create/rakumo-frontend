@@ -192,11 +192,63 @@ function generateSampleDoodleCanvas(){
   return c;
 }
 
+/* ---- サンプル体験の高速化 ----
+   「サンプルで試す」は、初めて訪れた人が待たされずに価値を感じられるかを
+   左右する重要な導線のため、実際のアップロード〜8スタイル生成(数十秒)を
+   経由せず、あらかじめ1回だけ生成しておいた本物の結果(実在するgeneration_id)
+   をそのまま使い回す。ダウンロードやギャラリー投稿も、実在するIDなので
+   通常のアップロード結果と同じように機能する。 */
+const SAMPLE_MOTIF_ID = "0320108794344a03";
+const SAMPLE_GENERATIONS = {
+  andy:          {generation_id:"cce69e59c6d3422d", image_url:"/api/result/cce69e59c6d3422d"},
+  dynamic:       {generation_id:"98247d1b90134781", image_url:"/api/result/98247d1b90134781"},
+  matisse:       {generation_id:"605bf3b8f51a4889", image_url:"/api/result/605bf3b8f51a4889"},
+  rothko:        {generation_id:"c95a1cf4e5124696", image_url:"/api/result/c95a1cf4e5124696"},
+  mirror:        {generation_id:"1c3c96483efa4636", image_url:"/api/result/1c3c96483efa4636"},
+  cubism:        {generation_id:"87366978e30a4f95", image_url:"/api/result/87366978e30a4f95"},
+  lichtenstein:  {generation_id:"63000ae13f5a4c11", image_url:"/api/result/63000ae13f5a4c11"},
+  triptych:      {generation_id:"6748eed959414b89", image_url:"/api/result/6748eed959414b89"},
+};
+
 async function runSample(){
-  const res = await fetch("assets/sample_doodle.jpg");
-  const blob = await res.blob();
-  const file = new File([blob], "sample.jpg", {type:"image/jpeg"});
-  handleUpload(file);
+  motifId = SAMPLE_MOTIF_ID;
+
+  $("uploadPane").hidden = true;
+  $("resultPane").hidden = false;
+  const origImg = new Image();
+  origImg.crossOrigin = "anonymous";
+  origImg.onload = ()=>{
+    const cv = $("origCanvas");
+    const dispW = 260, dispH = Math.round(dispW*origImg.height/origImg.width);
+    cv.width=dispW; cv.height=dispH;
+    const cctx = cv.getContext("2d");
+    cctx.fillStyle="#fff"; cctx.fillRect(0,0,dispW,dispH);
+    cctx.drawImage(origImg,0,0,dispW,dispH);
+  };
+  origImg.src = `${API_BASE}/api/motif/${motifId}`;
+
+  baseGenerations = {}; displayGenerations = {}; selectedStyle=null; rotationDeg=0;
+  updateRotateUI();
+  const grid = $("resultGrid");
+  grid.innerHTML = "";
+  STYLE_IDS.forEach(id=>{
+    const card = document.createElement("div");
+    card.className = "result-card";
+    card.id = `card-${id}`;
+    card.innerHTML = `<div class="thumb"><span style="color:#cbbf9e;font-size:20px;">${(STYLE_META[id]?.name||id)[0]}</span></div><div class="name">${STYLE_META[id]?.name||id}</div>`;
+    card.addEventListener("click", ()=> selectStyle(id));
+    grid.appendChild(card);
+  });
+  $("featuredArea").hidden = true;
+
+  // あらかじめ生成済みの結果を即座に反映(サーバーへの生成リクエストなし)
+  STYLE_IDS.forEach(styleId=>{
+    const g = SAMPLE_GENERATIONS[styleId];
+    if(!g) return;
+    baseGenerations[styleId] = g;
+    displayGenerations[styleId] = {image_url: g.image_url};
+    renderThumb(styleId, g.image_url);
+  });
 }
 
 /* ---- アップロード前の軽量化 ----
