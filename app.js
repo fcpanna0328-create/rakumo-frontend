@@ -454,39 +454,16 @@ async function startCheckout(plan){
   }
 }
 
-/* ---- 料金プラン表示・広告表示・決済完了後の復帰処理 ---- */
+/* ---- 料金プラン表示・決済完了後の復帰処理 ---- */
+/* 広告(AdSense自動広告)の読み込みはads.jsが担当する。使い放題プラン加入者には
+   広告を出さないため、こちらではpricingFreeCountの表示だけを行う。 */
 (async function initPricing(){
   try{
     const res = await fetch(`${API_BASE}/api/download-status`, { headers: authHeaders() });
     const data = await res.json();
     if(data.free_limit_today && $("pricingFreeCount")) $("pricingFreeCount").textContent = data.free_limit_today;
-    if(data.adsense_publisher_id) loadAd(data.adsense_publisher_id);
   }catch(err){ /* 料金表示は失敗しても致命的ではないので黙って諦める */ }
 })();
-
-function loadAd(publisherId){
-  // 使い放題プラン加入者にはdownload-statusのadsense_publisher_idが空で返るため
-  // (main.pyの/api/download-status参照)、ここに来る時点で広告表示対象と判定済み。
-  const slot = $("adSlot");
-  if(!slot || slot.dataset.loaded) return;
-  slot.dataset.loaded = "true";
-  const script = document.createElement("script");
-  script.async = true;
-  script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${publisherId}`;
-  script.crossOrigin = "anonymous";
-  document.head.appendChild(script);
-
-  const ins = document.createElement("ins");
-  ins.className = "adsbygoogle";
-  ins.style.display = "block";
-  ins.setAttribute("data-ad-client", publisherId);
-  ins.setAttribute("data-ad-format", "auto");
-  ins.setAttribute("data-full-width-responsive", "true");
-  // TODO: 広告ユニットをAdSense管理画面で作成後、data-ad-slotに実際のスロットIDを設定する
-  slot.appendChild(ins);
-  slot.hidden = false;
-  (window.adsbygoogle = window.adsbygoogle || []).push({});
-}
 
 (function handleCheckoutReturn(){
   const params = new URLSearchParams(window.location.search);
