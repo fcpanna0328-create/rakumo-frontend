@@ -10,6 +10,19 @@ const API_BASE = window.RAKUMO_API_BASE || "http://localhost:8000";
 const STYLE_IDS = ["andy","dynamic","matisse","rothko","mirror","cubism","lichtenstein","triptych"];
 let STYLE_META = {}; // id -> {name, description} ※ /api/styles から取得
 
+/* ---- 利用状況の計測(Google Analytics) ----
+   これまでページの閲覧数しか取れておらず、「来訪者が実際に作品を作れたのか」
+   「どこで離脱したのか」が全く分からなかった。ファネルの要所でイベントを
+   送ることで、改善すべき箇所をデータで判断できるようにする。
+   gtagが未読み込み(広告ブロッカー等)でもアプリが壊れないよう握りつぶす。 */
+function track(eventName, params){
+  try{
+    if(typeof window.gtag === "function"){
+      window.gtag("event", eventName, params || {});
+    }
+  }catch(e){ /* 計測の失敗で機能を止めない */ }
+}
+
 /* ---- ログイン状態 ---- */
 let authToken = localStorage.getItem("rakumo_token") || null;
 let authUserEmail = localStorage.getItem("rakumo_user_email") || null;
@@ -95,10 +108,12 @@ $("authForm").addEventListener("submit", async e=>{
   }
 
   if(data.email_confirmation_required){
+    track("signup_email_sent");
     $("authStatus").textContent = "確認メールを送りました。メール内のリンクをクリックしてから、ログインしてください。";
     return;
   }
 
+  track(authMode === "login" ? "login_success" : "signup_success");
   setSession(data.access_token, data.user && data.user.email);
   closeAuthModal();
 });
@@ -211,6 +226,7 @@ const SAMPLE_GENERATIONS = {
 };
 
 async function runSample(){
+  track("try_sample");            // サンプルで試した(申込不要の入口)
   motifId = SAMPLE_MOTIF_ID;
 
   // サンプルは生成済みの結果を出すだけなので、進捗ゲージも失敗表示も不要
@@ -311,6 +327,7 @@ function compressImageForUpload(file){
 let orientImg = null; // 向き確認中の元画像(Imageオブジェクト)
 
 async function handleUpload(file){
+  track("upload_start", {file_kb: Math.round(file.size/1024)});
   $("uploadStatus").textContent = `「${file.name}」を処理中…`;
   file = await compressImageForUpload(file);
   $("uploadStatus").textContent = `「${file.name}」をアップロード中…`;
@@ -321,16 +338,20 @@ async function handleUpload(file){
   try{
     res = await fetch(`${API_BASE}/api/upload`, {method:"POST", headers: authHeaders(), body:form});
   }catch(err){
+    track("upload_failed", {reason: "network"});
     $("uploadStatus").textContent = "サーバーに接続できませんでした。バックエンドが起動しているか確認してください。";
     return;
   }
   if(!res.ok){
     const err = await res.json().catch(()=>({detail:"不明なエラー"}));
+    // 上限超過(429)なのか他のエラーなのかを区別できるようにしておく
+    track("upload_failed", {reason: res.status === 429 ? "daily_limit" : String(res.status)});
     $("uploadStatus").textContent = err.detail || `エラー(${res.status})`;
     return;
   }
   const data = await res.json();
   motifId = data.motif_id;
+  track("upload_success");
 
   // 向き確認画面へ
   $("uploadPane").hidden = true;
@@ -378,6 +399,7 @@ $("rotateLeft").addEventListener("click", ()=> rotateOrientBy(-45));
 $("rotateRight").addEventListener("click", ()=> rotateOrientBy(45));
 
 $("confirmOrientBtn").addEventListener("click", async ()=>{
+  track("orientation_confirmed", {angle: rotationDeg});
   $("confirmOrientBtn").disabled = true;
   $("confirmOrientBtn").textContent = "作成の準備中…";
   try{
@@ -488,6 +510,9 @@ async function runGenerationQueue(styleIds){
   progressFill.style.width = "0%";
   progressCount.textContent = `0/${styleIds.length}`;
 
+  track("generate_start", {style_count: styleIds.length});
+  const startedAt = Date.now();
+
   let done = 0;
   const failed = [];
   for(const styleId of styleIds){
@@ -499,12 +524,21 @@ async function runGenerationQueue(styleIds){
   }
   progress.hidden = true;
 
+  // 何秒かかって、何枚成功したのか。ここが「使えたかどうか」の核心の指標。
+  track("generate_complete", {
+    seconds: Math.round((Date.now()-startedAt)/1000),
+    succeeded: styleIds.length - failed.length,
+    failed: failed.length
+  });
+
   if(failed.length){
+    track("generate_partial_failure", {failed_styles: failed.join(",")});
     const names = failed.map(id=> STYLE_META[id]?.name || id).join("、");
     $("genFailedMsg").textContent =
       `${names} は混雑のため作成できませんでした。少し待ってからやり直せます。`;
     $("genFailed").hidden = false;
     $("retryFailedBtn").onclick = async ()=>{
+      track("generate_retry_clicked", {style_count: failed.length});
       $("retryFailedBtn").disabled = true;
       await runGenerationQueue(failed);
       $("retryFailedBtn").disabled = false;
@@ -534,6 +568,7 @@ function renderThumb(styleId, imageUrl){
 
 function selectStyle(id){
   if(!baseGenerations[id]) return; // まだ生成が終わっていない
+  track("select_style", {style: id});
   selectedStyle = id;
   document.querySelectorAll(".result-card").forEach(c=>c.classList.remove("selected"));
   $(`card-${id}`).classList.add("selected");
@@ -596,6 +631,7 @@ $("downloadFramedBtn").addEventListener("click", ()=> attemptDownload("framed"))
 async function attemptDownload(kind){
   if(!selectedStyle || !baseGenerations[selectedStyle]) return;
   const generationId = baseGenerations[selectedStyle].generation_id;
+  track("download_click", {kind: kind, style: selectedStyle});
 
   let res, data;
   try{
@@ -609,9 +645,12 @@ async function attemptDownload(kind){
   }
 
   if(!data.allowed){
+    // 無料枠を使い切って課金画面が出た回数。収益化の重要な分岐点。
+    track("paywall_shown", {kind: kind});
     openPaywallModal(data);
     return;
   }
+  track("download_success", {kind: kind, style: selectedStyle});
   runDownload(kind);
 }
 
@@ -651,7 +690,10 @@ $("paywallSubBtn").addEventListener("click", ()=> startCheckout("subscription"))
 $("subscribeBtn")?.addEventListener("click", ()=> startCheckout("subscription"));
 
 async function startCheckout(plan){
+  track("checkout_start", {plan: plan});
   if(plan === "subscription" && !authToken){
+    // 未ログインで購読しようとして止まった件数。取りこぼしの把握に使う。
+    track("checkout_blocked_login_required", {plan: plan});
     $("paywallStatus").textContent = "使い放題プランのご利用にはログインが必要です。";
     closePaywallModal();
     openAuthModal("login");
@@ -873,6 +915,7 @@ $("submitPostBtn")?.addEventListener("click", async ()=>{
       $("submitPostBtn").disabled = false;
       return;
     }
+    track("publish_success", {style: selectedStyle});
     goToPostStep(5);
   }catch(err){
     $("postStep4Status").textContent = "サーバーに接続できませんでした。";
