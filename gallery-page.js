@@ -178,6 +178,7 @@ async function handleClap(id, btnEl) {
 
 function getStyleLabel(style) {
   const labels = {
+    stencil: 'ストリートアート風',
     andy: 'Andy風',
     dynamic: 'ダイナミックアート',
     matisse: 'Matisse風',
