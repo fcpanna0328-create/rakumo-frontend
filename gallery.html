@@ -8,9 +8,12 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="みんなのRAKUMO - 落書きアート RAKUMO">
   <meta property="og:description" content="全国の子どもたちの「今しか描けない」が集まるギャラリーです。">
-  <!-- TODO: 本番ドメイン確定後、og:imageは絶対URLに変更すること(相対パスはSNSクローラーに認識されない) -->
-  <meta property="og:image" content="assets/gallery_bg.png">
+  <!-- og:imageは必ず絶対URLにすること(相対パスだとSNSで画像が出ない) -->
+  <meta property="og:image" content="https://rakumo-art.com/assets/gallery_bg.png">
+  <meta property="og:image:alt" content="全国の子どもたちの落書きアートが並ぶギャラリー">
+  <meta property="og:url" content="https://rakumo-art.com/gallery.html">
   <meta property="og:site_name" content="みんなのRAKUMO">
+  <meta property="og:locale" content="ja_JP">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="style.css">
   <style>
@@ -883,6 +886,7 @@
 
     <div class="gallery-filters">
       <button class="filter-btn active" data-style="">全て</button>
+      <button class="filter-btn" data-style="stencil">ストリートアート風</button>
       <button class="filter-btn" data-style="andy">Andy風</button>
       <button class="filter-btn" data-style="dynamic">ダイナミックアート</button>
       <button class="filter-btn" data-style="matisse">Matisse風</button>
@@ -890,7 +894,6 @@
       <button class="filter-btn" data-style="mirror">ミラーリング</button>
       <button class="filter-btn" data-style="cubism">キュビズム風</button>
       <button class="filter-btn" data-style="lichtenstein">Lichtenstein風</button>
-      <button class="filter-btn" data-style="triptych">トリプティク</button>
     </div>
 
     <div class="gallery-filters age-filters">
