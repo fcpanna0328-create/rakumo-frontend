@@ -7,7 +7,9 @@
 // バックエンドのURL。開発中はlocalhost、本番ではデプロイ先のURLに変更する。
 const API_BASE = window.RAKUMO_API_BASE || "http://localhost:8000";
 
-const STYLE_IDS = ["andy","dynamic","matisse","rothko","mirror","cubism","lichtenstein","triptych"];
+// 表示順は先頭から。トリプティクはストリートアート風に置き換えて選択肢から外した
+// (既に公開済みの作品が1件あるため、バックエンドの登録と名前の対応は残してある)。
+const STYLE_IDS = ["stencil","andy","dynamic","matisse","rothko","mirror","cubism","lichtenstein"];
 let STYLE_META = {}; // id -> {name, description} ※ /api/styles から取得
 
 /* ---- 利用状況の計測(Google Analytics) ----
@@ -215,6 +217,7 @@ function generateSampleDoodleCanvas(){
    通常のアップロード結果と同じように機能する。 */
 const SAMPLE_MOTIF_ID = "0320108794344a03";
 const SAMPLE_GENERATIONS = {
+  stencil:       {generation_id:"dd1e0819001c4c34", image_url:"/api/result/dd1e0819001c4c34"},
   andy:          {generation_id:"cce69e59c6d3422d", image_url:"/api/result/cce69e59c6d3422d"},
   dynamic:       {generation_id:"98247d1b90134781", image_url:"/api/result/98247d1b90134781"},
   matisse:       {generation_id:"605bf3b8f51a4889", image_url:"/api/result/605bf3b8f51a4889"},
@@ -222,7 +225,6 @@ const SAMPLE_GENERATIONS = {
   mirror:        {generation_id:"1c3c96483efa4636", image_url:"/api/result/1c3c96483efa4636"},
   cubism:        {generation_id:"87366978e30a4f95", image_url:"/api/result/87366978e30a4f95"},
   lichtenstein:  {generation_id:"63000ae13f5a4c11", image_url:"/api/result/63000ae13f5a4c11"},
-  triptych:      {generation_id:"6748eed959414b89", image_url:"/api/result/6748eed959414b89"},
 };
 
 async function runSample(){
