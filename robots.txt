@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# マイページはログイン後の個人向け画面なので検索結果に出す必要がない
+Disallow: /mypage.html
+
+Sitemap: https://rakumo-art.com/sitemap.xml
