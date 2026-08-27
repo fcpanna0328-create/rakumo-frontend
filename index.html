@@ -8,9 +8,13 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="落書きアート RAKUMO — その一枚が宝物に">
 <meta property="og:description" content="子どもの落書きを8種類のアートスタイルに変換。額装して飾れる、世界にひとつの作品に。">
-<!-- TODO: 本番ドメイン確定後、og:imageは絶対URLに変更すること(相対パスはSNSクローラーに認識されない) -->
-<meta property="og:image" content="assets/asset_after.png">
+<!-- og:imageは必ず絶対URLにすること。相対パスだとSNSのクローラーが解決できず、
+     シェアしても画像が出ないただのテキストリンクになる(2026-08-24まで実際にそうなっていた)。 -->
+<meta property="og:image" content="https://rakumo-art.com/assets/asset_after.png">
+<meta property="og:image:alt" content="子どもの落書きがアート作品に変わったビフォー・アフター">
+<meta property="og:url" content="https://rakumo-art.com/">
 <meta property="og:site_name" content="落書きアート RAKUMO">
+<meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="style.css">
 <!-- Google tag (gtag.js) -->
@@ -148,6 +152,7 @@
   <h2>8つのアートスタイル</h2>
   <p class="section-sub">8つのスタイルから、あなたの落書きにぴったりのテイストを選べます</p>
   <div class="styles-scroll">
+    <div class="style-card"><img src="assets/style_stencil.png"><div class="style-label">ストリートアート風<span>壁の落書き</span></div></div>
     <div class="style-card"><img src="assets/style_andy.png"><div class="style-label">アンディ風<span>反復</span></div></div>
     <div class="style-card"><img src="assets/style_dynamic.png"><div class="style-label">ダイナミックアート<span>大胆な構図</span></div></div>
     <div class="style-card"><img src="assets/style_matisse.png"><div class="style-label">マティス風<span>切り絵</span></div></div>
@@ -155,7 +160,6 @@
     <div class="style-card"><img src="assets/style_mirror.png"><div class="style-label">ミラーリング<span>左右対称</span></div></div>
     <div class="style-card"><img src="assets/style_cubism.png"><div class="style-label">キュビズム風<span>多視点</span></div></div>
     <div class="style-card"><img src="assets/style_lichtenstein.png"><div class="style-label">リキテンスタイン風<span>ポップアート</span></div></div>
-    <div class="style-card"><img src="assets/style_triptych.png"><div class="style-label">トリプティク<span>三連画</span></div></div>
   </div>
 </section>
 
